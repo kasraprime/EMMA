@@ -1,0 +1,447 @@
+% EMNLP header. Do not change.
+\pdfoutput=1
+\documentclass[11pt]{article}
+\usepackage[review]{emnlp2021}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+% End header.
+
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+% EDITING LINK: 
+% https://www.overleaf.com/3575751412sjsdmszkxsyh
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{soul}
+\usepackage{url}
+% \usepackage[hidelinks]{hyperref}
+% \usepackage[small]{caption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\urlstyle{same}
+
+% =======================================
+% my imported packages
+
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{amssymb}
+\usepackage{listings}
+% \usepackage[ruled,vlined]{algorithm2e}
+\include{pythonlisting}
+
+\newcommand{\pseudosection}[1]{\vspace{1.5ex}\noindent \textit{{#1:~~}}}
+% \newcommand{\pseudosection}[1]\indent{{{}}}
+
+\usepackage{todonotes}
+\newcommand{\todokdinline}[1]{\todo[color=red!20,inline]{{KD: \small #1}}}
+\newcommand{\todokd}[1]{\todo[color=red!20]{{\small #1 -- Kasra}}}
+\newcommand{\todocainline}[1]{\todo[color=yellow!20,inline]{{CA: \small #1}}}
+\newcommand{\todocm}[1]{\todo[color=green!40]{\small #1 -- Cynthia}}
+\newcommand{\todocmi}[1]{\todo[inline,color=green!40]{\small #1 -- Cynthia}}
+\newcommand{\todoff}[1]{\todo[color=blue!20]{\small #1 -- Frank}}
+\newcommand{\todoed}[1]{\todo[color=cyan!20]{\small #1 -- Ed}}
+
+\newcommand{\CitationNeeded}[1]{{\textbf {\color{red}Cite #1}}}
+\newcommand{\ProofRead}[1]{{\textbf {\color{red}Proofread please #1}}}
+\newcommand{\Rephrase}[1]{{\textbf {\color{red}Rephrase please #1}}}
+
+% \newcommand{\citet}[1]{\cite{#1}} % This is used because \citet didn't work with their author kit % It does now
+
+% =======================================
+
+\title{MMA: Multi-modal Manifold Alignment}
+
+\author{
+First Author$^1$
+\and
+Second Author$^2$\and
+Third Author$^{2,3}$\And
+Fourth Author$^4$
+\affiliations
+$^1$First Affiliation\\
+$^2$Second Affiliation\\
+$^3$Third Affiliation\\
+$^4$Fourth Affiliation
+\emails
+\{first, second\}@example.com,
+third@other.example.com,
+fourth@example.com
+}
+
+
+\begin{document}
+
+Todo list
+
+\begin{enumerate}
+    \item Lit search 
+\end{enumerate}
+
+\newpage
+
+\maketitle
+\setcounter{page}{1}
+
+% ***************** The BEGINNING of the paper *****************
+
+\begin{abstract}
+    
+\end{abstract}
+
+%===================================================================
+\section{Lit Search}
+
+
+\subsection{Multimodal Machine Learning: A Survey and Taxonomy}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/document/8269806}{url}
+\end{itemize}
+
+\citet{baltrusaitisMultimodalMachineLearning2019} proposes a new taxonomy of multimodal machine learning by introducing five technical challenges in addition to typical early and late fusion categorization. This taxonomy includes the following categories.
+\begin{enumerate}
+\item \textit{Representation}: represent and summarize multimodal data in a way that exploits the complementarity and redundancy of multiple modalities.
+\begin{enumerate}
+\item joint: combine the unimodal signals into the same representation space.
+\item coordinated: process unimodal signals separately, but enforce certain similarity or structure constraints on them to bring them to a coordinated space.
+\end{enumerate}
+\item \textit{Translation}: map data from one modality to another.
+\begin{enumerate}
+\item example-based
+\item generative
+\end{enumerate}
+\item \textit{Alignment}: identify the direct relations between (sub)elements from two or more different modalities.
+\begin{enumerate}
+\item explicit
+\item implicit
+\end{enumerate}
+\item \textit{Fusion}: join information from two or more modalities to perform a prediction.
+\begin{enumerate}
+\item model-agnostic
+\item model-based
+\end{enumerate}
+\item \textit{Co-learning}: transfer knowledge between modalities, their representation, and their predictive models
+\begin{enumerate}
+\item parallel data
+\item non-parallel data
+\item hybrid data
+\end{enumerate}
+\end{enumerate}
+
+The authors mention that while joint representations have been used in situations to construct representations of more than two modalities, coordinated spaces have, so far, been mostly limited to two. This means that our research is novel and we can extend similarity measures to more than two modalities.
+
+\subsection{Self-Supervised MultiModal Versatile Networks}
+
+\begin{itemize}
+\item \href{https://proceedings.neurips.cc/paper/2020/file/0060ef47b12160b9198302ebdb144dcf-Paper.pdf?utm\_campaign=NLP\%20News\&utm\_medium=email\&utm\_source=Revue\%20newsletter}{url}
+\end{itemize}
+
+
+This work uses self-supervised contrastive learning to learn and combine representations from three modalities of visual, audio, and language. They learn a \textit{multimodal versatile network} that has the following four properties:
+\begin{enumerate}
+\item Ability to take any of the modalities as input
+\item Respecting the specificity of modalities: audio and visual modalities are fine-grained while language modality is coarse-grained.
+\item Comparability of different modalities using \textbf{dot product} even if not seen together during training 
+\item Efficiently applicable to visual data either in the form of dynamic videos or static images
+\end{enumerate}
+
+
+The authors consider the following three different configurations of the modality spaces which they call \textit{modality embedding graphs}.
+\begin{enumerate}
+\item Shared: all modalities map to the same space. This respects property 3 but violates property 2.
+\item Disjoint: visual-audio and visual-text spaces. This respects property 2 but violates property 3.
+\item Fine and coarse: audio and visual domains are map to the same space since they are fine-grained. These embeddings are then mapped to a lower dimensional space where text is also mapped. This respects both properties 2 and 3.
+\end{enumerate}
+
+The loss function they define consists of two terms. The first term is to train the fine-grained space of visual and audio embeddings by minimizing the distance between the similar pair (positives) from the same location of a video, and maximizing the distance between negative pairs (negatives) sampled from different videos. The second term is to train the coarse-grained space which consists of visual and text embeddings. Note that they don't consider audio embeddings in this space since they don't want to learn automatic speech recognition (ASR). Text and visual domains are not aligned as well as audio and visual domains (e.g. sound of playing piano versus the text that only says playing piano for a video of playing piano). To cure this, they consider a set of positive pairs instead of a single pair.
+If a modality is missed, the corresponding term is dropped from the loss function.
+
+\subsection{Separating Self-Expression and Visual Content in Hashtag Supervision}
+
+\begin{itemize}
+\item \href{https://openaccess.thecvf.com/content\_cvpr\_2018/papers/Veit\_Separating\_Self-Expression\_and\_CVPR\_2018\_paper.pdf}{url}
+\end{itemize}
+
+The authors train a joint model of images, hashtags, and users to perform image retrieval. This is similar to our task where given a description, we want to find the image in the scene that best matches the description. The idea is to form a three-way tensor product model. They use a ranking loss to train the model where the score of an observed triplet is higher than an unobserved triplet. They sample six negative triplets per positive sample triplet, and use each of them as a negative in the loss.
+The downstream retrieval task is then simply done by taking the arg max of the tensor product for a given user.
+
+
+
+\subsection{Semi-Heterogeneous Three-Way Joint Embedding Network for Sketch-Based Image Retrieval}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/document/8809264}{url}
+\end{itemize}
+
+\subsection{Deep Multimodal Learning for Affective Analysis and Retrieval}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/abstract/document/7277066?casa\_token=aBp6BxcszHwAAAAA:3NoMiFrZbn7tXfavF1rgkCiGWbFI2arxn8Xb6iDF79q4zBZHWi7PWWhf6xW-xJwYdFALbmRENo4}{url}
+\end{itemize}
+
+\subsection{An Efficient Framework for Zero-Shot Sketch-Based Image Retrieval}
+
+\begin{itemize}
+\item \href{https://arxiv.org/pdf/2102.04016.pdf}{url}
+\end{itemize}
+This paper uses two modalities only; image and sketch. However, it uses a \textit{quadruplet} to compute the loss which can be useful in our research. A quadruplet is composed of a sketch picture as an anchor, a negative example from sketch domain, a negative example from picture domain, and a positive example from picture domain.
+
+\subsection{SMIL: Multimodal Learning with Severely Missing Modality}
+
+\begin{itemize}
+\item \href{https://www.aaai.org/AAAI21Papers/AAAI-437.MaM.pdf}{url}
+\end{itemize}
+Uses Bayesian meta-learning framework to perform multimodal learning with partially missing modalities in training/test data.
+One of their experiments is multi-label classification of movie genres with bimodal data including poster of movies and description of the movie from IMDB.
+
+\subsection{Multimodal Language Analysis in the Wild: CMU-MOSEI Dataset and Interpretable Dynamic Fusion Graph}
+
+\begin{itemize}
+\item \href{https://aclanthology.org/P18-1208.pdf}{url}
+\end{itemize}
+
+\subsection{Multimodal Learning with Incomplete Modalities by Knowledge Distillation}
+
+\begin{itemize}
+\item \href{https://dl.acm.org/doi/pdf/10.1145/3394486.3403234}{url}
+\end{itemize}
+They first train models on each modality independently
+\subsection{SWAFN: Sentimental Words Aware Fusion Network for Multimodal Sentiment Analysis}
+
+\begin{itemize}
+\item \href{https://aclanthology.org/2020.coling-main.93.pdf}{url}
+\end{itemize}
+
+\subsection{Multimodal Learning for Human Action Recognition Via Bimodal/Multimodal Hybrid Centroid Canonical Correlation Analysis}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/document/8489981}{url}
+\end{itemize}
+
+\subsection{Deception Detection Using a Multimodal Approach}
+
+\begin{itemize}
+\item \href{https://dl.acm.org/doi/pdf/10.1145/2663204.2663229?casa\_token=KneK7B7xvLwAAAAA:Ajz0N96ygq8ktwkz0IVUqTt8NozCg2wR6n\_x2xntdHqZBh6VXW\_8VbO4GeY4VvMsDJlMwzkhVXQSJA}{url}
+\end{itemize}
+They use \textit{language}, \textit{physiological response}, and \textit{thermal sensing} to detect deceit.
+
+\subsection{M3ER: Multiplicative Multimodal Emotion Recognition using Facial, Textual, and Speech Cues}
+
+\begin{itemize}
+\item \href{https://ojs.aaai.org/index.php/AAAI/article/view/5492}{url}
+\end{itemize}
+
+\subsection{Found in Translation: Learning Robust Joint Representations by Cyclic Translations between Modalities}
+
+\begin{itemize}
+\item \href{https://ojs.aaai.org/index.php/AAAI/article/view/4666}{url}
+\end{itemize}
+\subsection{Select-Additive Learning: Improving Generalization In Multimodal Sentiment Analysis}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=\&arnumber=8019301}{url}
+\end{itemize}
+
+\subsection{Attention-Based Multimodal Fusion for Video Description}
+
+\begin{itemize}
+\item \href{https://openaccess.thecvf.com/content\_ICCV\_2017/papers/Hori\_Attention-Based\_Multimodal\_Fusion\_ICCV\_2017\_paper.pdf}{url}
+\end{itemize}
+\subsection{\st{3W-AlignNet: a Feature Alignment Framework for Person Search with Three-Way Decision Theory}}
+
+\begin{itemize}
+\item \href{https://link.springer.com/article/10.1007/s12559-021-09898-7}{url}
+\end{itemize}
+
+This is not very related since they use three-way decision theory to select bounding boxes as positive, negative, and boundary.
+Three-way here refers to something else and not modalities.
+
+\subsection{\st{Unsupervised Domain Adaptation for Face Recognition in Unlabeled Videos}}
+\begin{itemize}
+\item \href{https://openaccess.thecvf.com/content\_ICCV\_2017/papers/Sohn\_Unsupervised\_Domain\_Adaptation\_ICCV\_2017\_paper.pdf}{url}
+\end{itemize}
+Might be relevant but not super relevant.
+
+
+\subsection{Heterogeneous Sensor Data Fusion By Deep Multimodal Encoding}
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7874158}{url}
+\end{itemize}
+This one takes two modalities as input and outputs predictions in a third modality.
+
+
+
+
+
+%===================================================================
+\section{Introduction}
+\label{intro}
+
+% Grounded language learning~\cite{Mooney2008Grounded,RichardsDarvishMatuszekCategoryFree20,triplet_loss_2021_CVPR} is a cross-modal learning task to connect natural language with the physical environment in which the natural language is used.
+
+% Our contributions are as follows:
+% \begin{enumerate}
+%     \item 
+%     \item 
+%     \item 
+% \end{enumerate}
+
+%===================================================================
+
+\section{Related Work}
+\label{sec:Related-Work}
+
+
+%===================================================================
+
+
+\section{Problem Description}
+\label{sec:Problem-Description}
+
+
+
+
+
+
+
+
+
+
+
+%===================================================================
+
+
+
+\section{Approach}
+\label{sec:Method}
+
+For $M$ modalities, we define a distance based loss function that contains $M+2(M-1)!$ terms. 
+We sample two data points from each modality, one positive point and one negative point. The objective is then to (I) minimize the distance between each pair of positive points from heterogeneous modalities which results in $(M-1)!$ terms, (II) maximize the distance between each pair of positive and negative points from heterogeneous modalities which contains $(M-1)!$ terms again, and (III) maximize the distance between each pair of positive and negative points from the homogeneous modalities which contains $M$ terms.
+Equation~\ref{eq:objective} shows the objective function we defined above with changing maximization to minimization by changing the sign.
+
+% \begin{equation}\label{eq:objective-detailed}
+%     \min \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} ||x_{i}^{+} - x_{j}^{+}|| - \sum_{i=1}^{M-1} \sum_{j=i+1}^{N} ||x_{i}^{+} - x_{j}^{-}|| - 
+%     \sum_{i=1}^{M} ||x_{i}^{+} - x_{i}^{-}||
+% \end{equation}
+
+
+\begin{aligned}\label{eq:objective}
+    \mathcal{L}  &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} ||f_i(x_{i}^{+}) - f_j(x_{j}^{+})||
+    - ||f_i(x_{i}^{+}) - f_j(x_{j}^{-})|| \\ 
+    & - ||f_i(x_{i}^{-}) - f_j(x_{j}^{+})|| - \sum_{i=1}^{M} ||f_i(x_{i}^{+}) - f_i(x_{i}^{-}) ||
+\end{aligned}
+where the subscripts $i$ and $j$ represent modalities, and $f_i(.)$ and $f_j(.)$ represent functions that map input data to the shared latent space using a deep neural network.
+
+\todokdinline{I can add another term for minimizing the distance between similar pairs (anchor and positive) from the same domain. This would look like the equation below. However, it breaks the nice procedure of sampling two data points per modality}
+$+ \sum_{i=1}^{M} ||f_i(x_i^{a}) - f_i(x_i^{+})||$
+
+Our method is a generalization of well-known similarity-based metric learning and manifold alignment methods such as triplet loss~\CitationNeeded{}.
+If $M=2$ which means the number of modalities is 2, then our objective function reduces to quadruplet loss method.
+If $M=2$ and we ignore the last term in the objective function, it results in the triplet loss method. 
+If $M=1$, only the last term remains in the loss function which is exactly the pairwise distance-based loss function.
+
+
+
+
+
+
+
+\subsection{Network Architecture}
+\label{sec:Model}
+
+
+
+
+
+
+
+
+%===================================================================
+
+
+\section{Experiments}
+\label{sec:Experiments}
+
+\subsection{Data}
+\label{sec:Data}
+
+
+
+
+
+\subsection{Setup}
+\label{sec:setup}
+
+
+
+
+
+
+
+\subsection{Quantitative Results}
+\label{sec:Quantitative}
+
+
+\subsection{Qualitative Results}
+\label{sec:Qualitative}
+
+
+
+
+\subsection{Baselines}
+
+
+
+
+
+
+
+%===================================================================
+
+
+
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+
+%===================================================================
+
+
+% ***************** The END of the paper *****************
+
+
+
+\clearpage
+\section*{Acknowledgments}
+%% The file named.bst is a bibliography style file for BibTeX 0.99c
+\bibliographystyle{named}
+\bibliography{ref}
+\clearpage
+
+\appendix
+\label{sec:appendix}
+\section{Qualitative Analysis}
+
+\section{Model}
+
+
+\section{Experiments}
+
+\section{Results}
+
+\section{Setup}
+
+
+\end{document}
+
