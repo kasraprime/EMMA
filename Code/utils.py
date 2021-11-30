@@ -39,9 +39,9 @@ def initialize_result_keeper(config):
     """
     results = {
         'best': {
-            'best-train': {'mif1': -1.0, 'bif1': -1.0, 'mrr': -1.0, 'acc': -1.0, 'f1': -1.0, 'precision': -1.0, 'recall': -1.0, "TP": -1, "TN": -1, "FP": -1, "FN": -1},
-            'best-valid': {'mif1': -1.0, 'bif1': -1.0, 'mrr': -1.0, 'acc': -1.0, 'f1': -1.0, 'precision': -1.0, 'recall': -1.0, "TP": -1, "TN": -1, "FP": -1, "FN": -1},
-            'best-test': {'mif1': -1.0, 'bif1': -1.0, 'mrr': -1.0, 'acc': -1.0, 'f1': -1.0, 'precision': -1.0, 'recall': -1.0, "TP": -1, "TN": -1, "FP": -1, "FN": -1}
+            'best-train': {'mrr': -1.0, 'acc': -1.0, 'mif1': -1.0, 'bif1': -1.0, 'f1': -1.0, 'precision': -1.0, 'recall': -1.0, "TP": -1, "TN": -1, "FP": -1, "FN": -1},
+            'best-valid': {'mrr': -1.0, 'acc': -1.0, 'mif1': -1.0, 'bif1': -1.0, 'f1': -1.0, 'precision': -1.0, 'recall': -1.0, "TP": -1, "TN": -1, "FP": -1, "FN": -1},
+            'best-test': {'mrr': -1.0, 'acc': -1.0, 'mif1': -1.0, 'bif1': -1.0, 'f1': -1.0, 'precision': -1.0, 'recall': -1.0, "TP": -1, "TN": -1, "FP": -1, "FN": -1}
         },              
     } # stores the metircs per epoch: results[epoch][portion][metric]
 

@@ -11,8 +11,8 @@ def mma_loss(positive, negative, models, margin=0.4):
     triplet_loss = lambda a, p, n: torch.clamp(F.cosine_similarity(a, n) - F.cosine_similarity(a, p) + margin, 0.0, 2.0 + margin)
 
     batch_loss = {'total': 0.0}
-    modalities = ['depth', 'language']
-    anchor = 'rgb'
+    modalities = ['rgb', 'depth']
+    anchor = 'language'
     loss = 0.0
     
     for modality in modalities:
