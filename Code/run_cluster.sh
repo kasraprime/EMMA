@@ -16,7 +16,7 @@ exp_name=$1 # softmax, baseline, frozen, develop
 negative_sampling=$2 # no_neg_sampling , neg_sampling  , random_neg_sampling 
 embed_dim=$3 # 100 , 150 , 300, 550 This is the latent dimension
 random_seed=$4 # 32 , 64 , 128
-task=$5 # gold , RIVR , gauss_noise , dropout_noise , snp_noise
+task=$5 # gold , RIVR , gauss_noise , dropout_noise , snp_noise , clean_normalized
 # eval_mode=$2 # train , train-test , test
 # activation=$9 # softplus, relu, tanh
 
@@ -44,6 +44,9 @@ lr=0.001
 track=1 # 0 to turn off wandb and tensorboard tracking
 gpu_num=$(nvidia-smi --query-gpu=memory.free --format=csv,nounits,noheader | nl -v 0 | sort -nrk 2 | cut -f 1 | head -n 1 | xargs) # which one is free?
 
+sim=(snp_noise gauss_noise dropout_noise RIVR clean_normalized)
+real=(gold_no_crop gold_crop gold_no_crop_old)
+
 # Frequently changing
 data_type='rgbd' # 'rgb', 'depth', 'rgbd'
 per_epoch='best' # 'best' or 'all'
@@ -51,16 +54,15 @@ epoch=200
 if [ $negative_sampling = no_neg_sampling ]
 then
 batch_size=1 # batch size has to be 1 if not using negative sampling
-elif [ $negative_sampling = neg_sampling ] && [ $task = gold ]
+elif [ $negative_sampling = neg_sampling ] && [[ " ${real[*]} " =~ " $task " ]]
 then
 batch_size=64 # 64 or 32 or 8
 else
 batch_size=4
 fi
 
-sim=(snp_noise gauss_noise dropout_noise RIVR)
 echo "copying data to scratch directory ..."
-if [ $task = gold ]
+if [[ " ${real[*]} " =~ " $task " ]]
 then
 echo "copying gold dataset ..."
 mkdir -p $TMPDIR/data/gold

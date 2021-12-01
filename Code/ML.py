@@ -276,7 +276,7 @@ if __name__ == "__main__":
         import wandb
         from torch.utils.tensorboard import SummaryWriter
         from torchviz import make_dot
-        wandb.init(project='sim2real', name=config.exp_full_name, sync_tensorboard=True)
+        wandb.init(project='MMA', name=config.exp_full_name, sync_tensorboard=True)
         wandb.config.update(config)
         wandb.config.codedir = os.path.basename(os.getcwd())
         tb_writer = SummaryWriter(log_dir=wandb.run.dir)

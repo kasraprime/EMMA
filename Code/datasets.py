@@ -20,14 +20,16 @@ class GoLD_Dataset(Dataset):
         self.config = config
         self.device = device
         self.train = train
-        if config.task == 'gold':
+        if config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
             root_dir = config.data_dir+'gold/images'
             # csv_file = '../../../../data/gold/text.tsv'
             csv_file = '../data/gold_text.tsv'
-        elif config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise']:
+            task = 'gold'
+        elif config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise', 'clean_normalized']:
             # root_dir = config.data_dir+'VR_GoLD_structure/images'
             root_dir = config.data_dir+'simulation/images'
             csv_file = '../data/rivr_data.tsv'
+            task = 'simulation'
 
         full_dataset = pd.read_csv(csv_file, header=0, delimiter='\t', keep_default_na=False)
         dataset = full_dataset.reset_index()
@@ -41,12 +43,12 @@ class GoLD_Dataset(Dataset):
                                                         torchvision.transforms.ToPILImage(), resize,
                                                         torchvision.transforms.ToTensor(), normalize])
 
-        if config.task == 'gold':
+        if config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
             self.images = dataset["item_id"]
             self.descriptions = dataset["text"]
             self.object_names = [self.getObjectName(image) for image in self.images]
             self.instance_names = [self.getInstanceName(image) for image in self.images]
-        elif config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise']:
+        elif config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise', 'clean_normalized']:
             self.images = dataset["object_instance"]
             self.descriptions = dataset["transcription_text"]
             self.instance_names = dataset["object_instance"]
@@ -73,9 +75,9 @@ class GoLD_Dataset(Dataset):
             self.rgb_embeddings, self.depth_embeddings = self.image_embeddings[0], self.image_embeddings[1]
         
         if computed_lang_embeds is None:
-            if os.path.exists('../data/'+config.task+'_language_embeddings.pkl'):
-                print(f'loading {config.task} language embeddings previously saved')
-                self.language_embeddings = pickle.load(open('../data/'+config.task+'_language_embeddings.pkl', 'rb'))
+            if os.path.exists('../data/'+task+'_language_embeddings.pkl'):
+                print(f'loading {task} language embeddings previously saved')
+                self.language_embeddings = pickle.load(open('../data/'+task+'_language_embeddings.pkl', 'rb'))
             else:
                 print('computing language embeddings once ...')
                 self.language_embeddings = []
@@ -83,15 +85,15 @@ class GoLD_Dataset(Dataset):
                 for i in range(len(self.descriptions)):
                     self.language_embeddings.append(self.proc_sentence(self.descriptions[i]).detach().cpu().numpy())
                 print('Done computing language embeddings once!')
-                pickle.dump(self.language_embeddings, open('../data/'+config.task+'_language_embeddings.pkl', 'wb'))
+                pickle.dump(self.language_embeddings, open('../data/'+task+'_language_embeddings.pkl', 'wb'))
         else:
             self.language_embeddings = computed_lang_embeds
         
-        if config.split == 'view' and config.task == 'gold':
+        if config.split == 'view' and config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
             # Split in a way that each view is in 1 portion only, but the same instance with different views can be across multiple portions
             unique_views = list(set(zip(list(self.images),self.instance_names)))
             unique_views.sort()
-            if config.task == 'gold':
+            if config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
                 unique_views.remove(('onion_1_1', 'onion_1')) # there is only 1 view for onion_1 so I remove it and add it manually to train set
             unique_views = list(zip(*unique_views))
             views_train_valid, views_test = train_test_split(unique_views[0],test_size=0.30,random_state=config.random_seed,stratify=unique_views[1])
@@ -106,7 +108,7 @@ class GoLD_Dataset(Dataset):
             views_train.append('onion_1_1')
             valid_indices = [idx for idx in range(len(self.images)) if self.images[idx] in views_valid]
             train_indices = [idx for idx in range(len(self.images)) if self.images[idx] in views_train]
-        elif config.split == 'flat' or config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise']:
+        elif config.split == 'flat' or config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise', 'clean_normalized']:
             print('splitting dataset flatly across train, valid, and test')
             # spliting the dataset flat such that each description (each line of gold.tsv) appears in 1 portion only.
             # We can have the same images (same object, same instance, same view) in different portions but the description are not the same. Image leakage!
@@ -178,17 +180,18 @@ class GoLD_Dataset(Dataset):
         return sentence.get_embedding()
     
     def read_image(self, image_name):
-        if self.config.task == 'gold':
-            cropped = False
+        if self.config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
             object_name = self.getObjectName(image_name)
             instance_name = self.getInstanceName(image_name)
-            if cropped:
+            if self.config.task == 'gold_crop':
                 rgb_image_loc = self.root_dir + "/color_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
                 depth_image_loc = self.root_dir + "/depth_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-            else:
+            elif self.config.task == 'gold_no_crop':
                 rgb_image_loc = self.root_dir + "/image_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                # depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
                 depth_image_loc = self.root_dir + "/depth_uint16/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+            elif self.config.task == 'gold_no_crop_old':
+                rgb_image_loc = self.root_dir + "/image_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
                 
         elif self.config.task == 'RIVR':
             object_name = image_name.split('_')[-1]
@@ -199,6 +202,11 @@ class GoLD_Dataset(Dataset):
             object_name = image_name.split('_')[-1]
             rgb_image_loc = self.root_dir + "/color/" + object_name + "/" + image_name + "_color_" + noise + "_effects.png"
             depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + image_name + "_depth_" + noise + "_effects.png"
+        elif self.config.task == 'clean_normalized':
+            noise = self.config.task.split('_')[0]
+            object_name = image_name.split('_')[-1]
+            rgb_image_loc = self.root_dir + "/color/" + object_name + "/" + image_name + "_color_" + noise + ".png"
+            depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + image_name + "_depth_" + noise + ".png"
             
         rgb_image = io.imread(rgb_image_loc, as_gray=False)
         if rgb_image.shape[2] == 4: # if RGB-A image instead of RGB
