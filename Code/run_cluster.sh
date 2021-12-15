@@ -45,7 +45,7 @@ track=1 # 0 to turn off wandb and tensorboard tracking
 gpu_num=$(nvidia-smi --query-gpu=memory.free --format=csv,nounits,noheader | nl -v 0 | sort -nrk 2 | cut -f 1 | head -n 1 | xargs) # which one is free?
 
 sim=(snp_noise gauss_noise dropout_noise RIVR clean_normalized)
-real=(gold_no_crop gold_crop gold_no_crop_old)
+real=(gold gold_raw gold_cropped gold_no_crop_old)
 
 # Frequently changing
 data_type='rgbd' # 'rgb', 'depth', 'rgbd'

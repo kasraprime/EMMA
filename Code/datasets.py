@@ -20,7 +20,7 @@ class GoLD_Dataset(Dataset):
         self.config = config
         self.device = device
         self.train = train
-        if config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
+        if config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             root_dir = config.data_dir+'gold/images'
             # csv_file = '../../../../data/gold/text.tsv'
             csv_file = '../data/gold_text.tsv'
@@ -43,7 +43,7 @@ class GoLD_Dataset(Dataset):
                                                         torchvision.transforms.ToPILImage(), resize,
                                                         torchvision.transforms.ToTensor(), normalize])
 
-        if config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
+        if config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             self.images = dataset["item_id"]
             self.descriptions = dataset["text"]
             self.object_names = [self.getObjectName(image) for image in self.images]
@@ -89,11 +89,11 @@ class GoLD_Dataset(Dataset):
         else:
             self.language_embeddings = computed_lang_embeds
         
-        if config.split == 'view' and config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
+        if config.split == 'view' and config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             # Split in a way that each view is in 1 portion only, but the same instance with different views can be across multiple portions
             unique_views = list(set(zip(list(self.images),self.instance_names)))
             unique_views.sort()
-            if config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
+            if config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
                 unique_views.remove(('onion_1_1', 'onion_1')) # there is only 1 view for onion_1 so I remove it and add it manually to train set
             unique_views = list(zip(*unique_views))
             views_train_valid, views_test = train_test_split(unique_views[0],test_size=0.30,random_state=config.random_seed,stratify=unique_views[1])
@@ -180,18 +180,24 @@ class GoLD_Dataset(Dataset):
         return sentence.get_embedding()
     
     def read_image(self, image_name):
-        if self.config.task in ['gold_no_crop', 'gold_crop', 'gold_no_crop_old']:
+        if self.config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             object_name = self.getObjectName(image_name)
             instance_name = self.getInstanceName(image_name)
-            if self.config.task == 'gold_crop':
-                rgb_image_loc = self.root_dir + "/color_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+            if self.config.task == 'gold':
+                # Masked but not cropped
+                rgb_image_loc = self.root_dir + "/RGB/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+            elif self.config.task == 'gold_raw':
+                # not masked and not cropped
+                rgb_image_loc = self.root_dir + "/RGB_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "/depth_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+            elif self.config.task == 'gold_cropped':
+                # masked and cropped
+                rgb_image_loc = self.root_dir + "/RGB_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
                 depth_image_loc = self.root_dir + "/depth_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-            elif self.config.task == 'gold_no_crop':
-                rgb_image_loc = self.root_dir + "/image_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                depth_image_loc = self.root_dir + "/depth_uint16/" + object_name + "/" + instance_name + "/" + image_name + ".png"
             elif self.config.task == 'gold_no_crop_old':
                 rgb_image_loc = self.root_dir + "/image_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "/old_depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
                 
         elif self.config.task == 'RIVR':
             object_name = image_name.split('_')[-1]
