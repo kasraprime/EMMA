@@ -68,6 +68,8 @@ echo "copying gold dataset ..."
 mkdir -p $TMPDIR/data/gold
 org_data=../../../../data/gold/images
 rsync -a $org_data $TMPDIR/data/gold
+audio_data=../../../../data/gold/speech
+rsync -a $audio_data $TMPDIR/data/gold
 elif [[ " ${sim[*]} " =~ " $task " ]]
 then
 echo "copying ${task} dataset ..."

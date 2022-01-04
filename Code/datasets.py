@@ -10,20 +10,24 @@ import flair
 import re
 from skimage import io
 import skimage
+from transformers import Wav2Vec2Processor, Wav2Vec2Model
+import soundfile as sf
 
 
 class GoLD_Dataset(Dataset):
 
-    def __init__(self, config, device, computed_vision_embeds, train='train', computed_lang_embeds=None):
+    def __init__(self, config, device, computed_vision_embeds, train='train', computed_lang_embeds=None, computed_audio_embeds=None):
     
         self.a_override = False
         self.config = config
         self.device = device
         self.train = train
         if config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
-            root_dir = config.data_dir+'gold/images'
+            root_dir = config.data_dir+'gold/'
             # csv_file = '../../../../data/gold/text.tsv'
             csv_file = '../data/gold_text.tsv'
+            speech_file = '../data/gold_speech.tsv'
+            # audio_root_dir = config.data_dir+'gold/speech/'
             task = 'gold'
         elif config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise', 'clean_normalized']:
             # root_dir = config.data_dir+'VR_GoLD_structure/images'
@@ -33,6 +37,19 @@ class GoLD_Dataset(Dataset):
 
         full_dataset = pd.read_csv(csv_file, header=0, delimiter='\t', keep_default_na=False)
         dataset = full_dataset.reset_index()
+
+        speech_dataset_original = pd.read_csv(speech_file, header=0, delimiter='\t', keep_default_na=False)
+        # BEGIN sort speech based on full_dataset
+        item_id_dict = {}
+        for instance in np.unique(np.array(speech_dataset_original['item_id'])):
+            item_id_dict[instance] = list(np.where(np.array(speech_dataset_original['item_id'].tolist()) == instance)[0])
+        new_location = []
+        for instance in dataset['item_id']:
+            new_location.append(item_id_dict[instance].pop()) # choosing one of the indices from speech tsv for the instance. It doesn't matter because beyond the name of image, nothing is related (paired)
+        speech_dataset = speech_dataset_original.iloc[new_location].reset_index()
+        # END sort
+        # TODO Alternatively you can sort both tsv files and then you are good to go.
+
         normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         resize = torchvision.transforms.Resize((128,128))
         transform_rgb = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(), resize,
@@ -48,6 +65,7 @@ class GoLD_Dataset(Dataset):
             self.descriptions = dataset["text"]
             self.object_names = [self.getObjectName(image) for image in self.images]
             self.instance_names = [self.getInstanceName(image) for image in self.images]
+            self.audios = speech_dataset['wav']
         elif config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise', 'clean_normalized']:
             self.images = dataset["object_instance"]
             self.descriptions = dataset["transcription_text"]
@@ -55,6 +73,7 @@ class GoLD_Dataset(Dataset):
             self.object_names = [instance.split('_')[1] for instance in self.instance_names]
         
         self.root_dir = root_dir
+        # self.audio_root_dir = audio_root_dir
         self.rgb_transform = transform_rgb
         self.depth_transform = transform_depth
         
@@ -88,7 +107,24 @@ class GoLD_Dataset(Dataset):
                 pickle.dump(self.language_embeddings, open('../data/'+task+'_language_embeddings.pkl', 'wb'))
         else:
             self.language_embeddings = computed_lang_embeds
-        
+
+        if computed_audio_embeds is None:
+            if os.path.exists('../data/'+task+'_audio_embeddings.pkl'):
+                print(f'loading {task} audio embeddings previously saved')
+                self.audio_embeddings = pickle.load(open('../data/'+task+'_audio_embeddings.pkl', 'rb'))
+            else:
+                print('computing audio embeddings once ...')
+                self.audio_embeddings = []
+                self.auido_processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
+                self.audio_model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base-960h").cuda()
+                for i in range(len(self.audios)):
+                    self.audio_embeddings.append(self.proc_speech(self.audios[i]).detach().cpu().numpy())
+                print('Done computing audio embeddings once!')
+                pickle.dump(self.audio_embeddings, open('../data/'+task+'_audio_embeddings.pkl', 'wb'))
+        else:
+            self.audio_embeddings = computed_audio_embeds
+
+
         if config.split == 'view' and config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             # Split in a way that each view is in 1 portion only, but the same instance with different views can be across multiple portions
             unique_views = list(set(zip(list(self.images),self.instance_names)))
@@ -130,6 +166,7 @@ class GoLD_Dataset(Dataset):
         self.language_embeddings_data = [self.language_embeddings[i] for i in indicies_portion]
         self.rgb_embeddings_data = [self.rgb_embeddings[i] for i in indicies_portion]
         self.depth_embeddings_data = [self.depth_embeddings[i] for i in indicies_portion]
+        self.audio_embeddings_data = [self.audio_embeddings[i] for i in indicies_portion]
 
         if config.negative_sampling == 'neg_sampling':
             print('negative sampling in progress ...')
@@ -149,6 +186,7 @@ class GoLD_Dataset(Dataset):
                 'instance': self.instance_names_data[index],
                 'object': self.object_names_data[index],
                 'img_name': self.images_data[index],
+                'audio': self.audio_embeddings_data[index],
             }
         else:
             if self.config.negative_sampling == 'neg_sampling':
@@ -158,8 +196,8 @@ class GoLD_Dataset(Dataset):
                 negative_index = np.random.choice([i for i, x in enumerate(self.object_names_data) if x == negative_label])
                 
             item = {
-                'pos': {'rgb': self.rgb_embeddings_data[index], 'depth': self.depth_embeddings_data[index], 'language': self.language_embeddings_data[index], 'instance': self.instance_names_data[index], 'object': self.object_names_data[index]},
-                'neg': {'rgb': self.rgb_embeddings_data[negative_index], 'depth': self.depth_embeddings_data[negative_index], 'language': self.language_embeddings_data[negative_index], 'instance': self.instance_names_data[negative_index], 'object': self.object_names_data[negative_index]},     
+                'pos': {'rgb': self.rgb_embeddings_data[index], 'depth': self.depth_embeddings_data[index], 'language': self.language_embeddings_data[index], 'instance': self.instance_names_data[index], 'object': self.object_names_data[index], 'audio': self.audio_embeddings_data[index]},
+                'neg': {'rgb': self.rgb_embeddings_data[negative_index], 'depth': self.depth_embeddings_data[negative_index], 'language': self.language_embeddings_data[negative_index], 'instance': self.instance_names_data[negative_index], 'object': self.object_names_data[negative_index], 'audio': self.audio_embeddings_data[negative_index]},
             }
         return item
 
@@ -179,25 +217,35 @@ class GoLD_Dataset(Dataset):
         self.language_model.embed(sentence)
         return sentence.get_embedding()
     
+    def proc_speech(self, audio_name):
+        audio_file = self.root_dir + 'speech/' + audio_name + '.wav'
+        speech, _ = sf.read(audio_file)
+        input_values = self.auido_processor(speech, return_tensors="pt", sampling_rate=16000).input_values.cuda()
+        with torch.no_grad():
+            hidden_states = self.audio_model(input_values, output_hidden_states=True).hidden_states
+        hidden_states = torch.cat([i for i in hidden_states][-4:]).transpose(0,1).contiguous().view(-1, 3072)
+        audio_features = torch.mean(hidden_states, dim=0).view(-1)
+        return audio_features
+
     def read_image(self, image_name):
         if self.config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             object_name = self.getObjectName(image_name)
             instance_name = self.getInstanceName(image_name)
             if self.config.task == 'gold':
                 # Masked but not cropped
-                rgb_image_loc = self.root_dir + "/RGB/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                depth_image_loc = self.root_dir + "/depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                rgb_image_loc = self.root_dir + "images/RGB/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "images/depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
             elif self.config.task == 'gold_raw':
                 # not masked and not cropped
-                rgb_image_loc = self.root_dir + "/RGB_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                depth_image_loc = self.root_dir + "/depth_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                rgb_image_loc = self.root_dir + "images/RGB_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "images/depth_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
             elif self.config.task == 'gold_cropped':
                 # masked and cropped
-                rgb_image_loc = self.root_dir + "/RGB_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                depth_image_loc = self.root_dir + "/depth_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                rgb_image_loc = self.root_dir + "images/RGB_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "images/depth_cropped/" + object_name + "/" + instance_name + "/" + image_name + ".png"
             elif self.config.task == 'gold_no_crop_old':
-                rgb_image_loc = self.root_dir + "/image_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
-                depth_image_loc = self.root_dir + "/old_depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                rgb_image_loc = self.root_dir + "images/image_raw/" + object_name + "/" + instance_name + "/" + image_name + ".png"
+                depth_image_loc = self.root_dir + "images/old_depth/" + object_name + "/" + instance_name + "/" + image_name + ".png"
                 
         elif self.config.task == 'RIVR':
             object_name = image_name.split('_')[-1]
@@ -258,9 +306,9 @@ class Identity(torch.nn.Module):
 
 def dataset_loader(config, device):
     # Load datasets.
-    train_dataset = GoLD_Dataset(config, device, computed_vision_embeds=None, train='train', computed_lang_embeds=None)
-    valid_dataset = GoLD_Dataset(config, device, computed_vision_embeds=train_dataset.image_embeddings, train='valid', computed_lang_embeds=train_dataset.language_embeddings)
-    test_dataset = GoLD_Dataset(config, device, computed_vision_embeds=train_dataset.image_embeddings, train='test', computed_lang_embeds=train_dataset.language_embeddings)
+    train_dataset = GoLD_Dataset(config, device, computed_vision_embeds=None, train='train', computed_lang_embeds=None, computed_audio_embeds=None)
+    valid_dataset = GoLD_Dataset(config, device, computed_vision_embeds=train_dataset.image_embeddings, train='valid', computed_lang_embeds=train_dataset.language_embeddings, computed_audio_embeds=train_dataset.audio_embeddings)
+    test_dataset = GoLD_Dataset(config, device, computed_vision_embeds=train_dataset.image_embeddings, train='test', computed_lang_embeds=train_dataset.language_embeddings, computed_audio_embeds=train_dataset.audio_embeddings)
     
     drop_last = False
     if len(train_dataset) % config.batch_size == 1: # If using BatchNorm, last batch cannot have 1 smaple.

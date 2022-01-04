@@ -103,7 +103,7 @@ def evaluate(config, models, dataset, portion):
     This function runs the model over valid and/or test set
     Returns f1, precision, accuracy, and the model outputs
     """
-    outputs = {'rgb': [], 'depth': [], 'language': [], 'object_names': [], 'instace_names': [], 'image_names': []}
+    outputs = {'rgb': [], 'depth': [], 'language': [], 'audio': [], 'object_names': [], 'instace_names': [], 'image_names': []}
     
     for modality in models.keys():
         model = models[modality]
@@ -122,7 +122,7 @@ def evaluate(config, models, dataset, portion):
                 outputs[key] = np.concatenate(outputs[key], axis=0)
 
         if config.metric_mode == 'sampling':
-            outputs['ground_truth'], outputs['predictions'], outputs['distances'], outputs['sampled_distances'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['object_names'])
+            outputs['ground_truth'], outputs['predictions'], outputs['distances'], outputs['sampled_distances'] , outputs['all_matrix_distances'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'])
             mrr_acc = mrr_acc_metrics(outputs)
         elif config.metric_mode == 'threshold':
             outputs['ground_truth'], outputs['predictions'], outputs['distances'] = object_retrieval_task_threshold_full_data(config, outputs['language'], outputs['vision'], outputs['object_names'])
@@ -157,7 +157,7 @@ def test(config, models, dataset, portion):
 
 
 
-def object_retrieval_task_sampling(config, language, rgb, depth, object_names):
+def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_names):
     '''
     I assumed that languages are the rows of distance matrix, and images are the columns
     Another assumption is that number of languages and images are the same.
@@ -168,11 +168,26 @@ def object_retrieval_task_sampling(config, language, rgb, depth, object_names):
     if config.distance == 'cosine':
         lr_matrix_distance = 1 - cosine_similarity(language, rgb)
         ld_matrix_distance = 1 - cosine_similarity(language, depth)
-        matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2
+        ar_matrix_distance = 1 - cosine_similarity(audio, rgb)
+        ad_matrix_distance = 1 - cosine_similarity(audio, depth)
+        la_matrix_distance = 1 - cosine_similarity(language, audio)
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + la_matrix_distance) / 3
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4
+        matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
+        # TODO Save/return all these matrices
     elif config.distance == 'euclidean':
         lr_matrix_distance = euclidean_distances(language, rgb)
         ld_matrix_distance = euclidean_distances(language, depth)
-        matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2
+        ar_matrix_distance = 1 - euclidean_distances(audio, rgb)
+        ad_matrix_distance = 1 - euclidean_distances(audio, depth)
+        la_matrix_distance = 1 - euclidean_distances(language, audio)
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2
+        matrix_distance = (lr_matrix_distance + ld_matrix_distance + la_matrix_distance) / 3
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
+    
+    all_matrix_distances = {'lr': lr_matrix_distance, 'ld': ld_matrix_distance, 'ar': ar_matrix_distance, 'ad': ad_matrix_distance, 'la': la_matrix_distance}
     
     unique_objects = list(set(object_names))
     sampled_outputs = []
@@ -191,7 +206,7 @@ def object_retrieval_task_sampling(config, language, rgb, depth, object_names):
     sampled_pred = sampled_pred != 1 # we want the index in which has 0 to be True and all other False
     sampled_gt = np.array([[True] + [False]*(config.metric_sample_size)]*sampled_row_indices.shape[0])
 
-    return sampled_gt, sampled_pred, matrix_distance, sampled_distances
+    return sampled_gt, sampled_pred, matrix_distance, sampled_distances, all_matrix_distances
 
 
 
@@ -251,6 +266,7 @@ if __name__ == "__main__":
     
     config = load_configs()
     
+    # TODO cdta color depth text audio
     if config.data_type == 'rgbd':
         config.domains = ['rgb', 'depth']
     elif config.data_type == 'rgb':
@@ -270,7 +286,11 @@ if __name__ == "__main__":
     rgb_model = TheModel(config, feature_size=2048, device=device, embed_dim=config.embed_dim)
     depth_model = TheModel(config, feature_size=2048, device=device, embed_dim=config.embed_dim)
     language_model = TheModel(config, feature_size=3072, device=device, embed_dim=config.embed_dim)
-    models = {'rgb': rgb_model, 'depth':depth_model, 'language': language_model}
+    audio_model = TheModel(config, feature_size=3072, device=device, embed_dim=config.embed_dim)
+    models = {'rgb': rgb_model, 'depth':depth_model, 'language': language_model, 'audio': audio_model}
+    # TODO: for modality in modalities: 
+    # if modality == audio or modality ==language: feature_size = 3072 else: 2048
+    # models[modality] = TheModel(feature_size)
 
     if config.wandb_track == 1:
         import wandb
