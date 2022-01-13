@@ -1,0 +1,181 @@
+\section{Lit Search}
+\subsection{Multimodal Machine Learning: A Survey and Taxonomy}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/document/8269806}{url}
+\end{itemize}
+
+\citet{baltrusaitisMultimodalMachineLearning2019} proposes a new taxonomy of multimodal machine learning by introducing five technical challenges in addition to typical early and late fusion categorization. This taxonomy includes the following categories.
+\begin{enumerate}
+\item \textit{Representation}: represent and summarize multimodal data in a way that exploits the complementarity and redundancy of multiple modalities.
+\begin{enumerate}
+\item joint: combine the unimodal signals into the same representation space.
+\item coordinated: process unimodal signals separately, but enforce certain similarity or structure constraints on them to bring them to a coordinated space.
+\end{enumerate}
+\item \textit{Translation}: map data from one modality to another.
+\begin{enumerate}
+\item example-based
+\item generative
+\end{enumerate}
+\item \textit{Alignment}: identify the direct relations between (sub)elements from two or more different modalities.
+\begin{enumerate}
+\item explicit
+\item implicit
+\end{enumerate}
+\item \textit{Fusion}: join information from two or more modalities to perform a prediction.
+\begin{enumerate}
+\item model-agnostic
+\item model-based
+\end{enumerate}
+\item \textit{Co-learning}: transfer knowledge between modalities, their representation, and their predictive models
+\begin{enumerate}
+\item parallel data
+\item non-parallel data
+\item hybrid data
+\end{enumerate}
+\end{enumerate}
+
+The authors mention that while joint representations have been used in situations to construct representations of more than two modalities, coordinated spaces have, so far, been mostly limited to two. This means that our research is novel and we can extend similarity measures to more than two modalities.
+
+\subsection{Self-Supervised MultiModal Versatile Networks}
+
+\begin{itemize}
+\item \href{https://proceedings.neurips.cc/paper/2020/file/0060ef47b12160b9198302ebdb144dcf-Paper.pdf?utm\_campaign=NLP\%20News\&utm\_medium=email\&utm\_source=Revue\%20newsletter}{url}
+\end{itemize}
+
+
+This work uses self-supervised contrastive learning to learn and combine representations from three modalities of visual, audio, and language. They learn a \textit{multimodal versatile network} that has the following four properties:
+\begin{enumerate}
+\item Ability to take any of the modalities as input
+\item Respecting the specificity of modalities: audio and visual modalities are fine-grained while language modality is coarse-grained.
+\item Comparability of different modalities using \textbf{dot product} even if not seen together during training 
+\item Efficiently applicable to visual data either in the form of dynamic videos or static images
+\end{enumerate}
+
+
+The authors consider the following three different configurations of the modality spaces which they call \textit{modality embedding graphs}.
+\begin{enumerate}
+\item Shared: all modalities map to the same space. This respects property 3 but violates property 2.
+\item Disjoint: visual-audio and visual-text spaces. This respects property 2 but violates property 3.
+\item Fine and coarse: audio and visual domains are map to the same space since they are fine-grained. These embeddings are then mapped to a lower dimensional space where text is also mapped. This respects both properties 2 and 3.
+\end{enumerate}
+
+The loss function they define consists of two terms. The first term is to train the fine-grained space of visual and audio embeddings by minimizing the distance between the similar pair (positives) from the same location of a video, and maximizing the distance between negative pairs (negatives) sampled from different videos. The second term is to train the coarse-grained space which consists of visual and text embeddings. Note that they don't consider audio embeddings in this space since they don't want to learn automatic speech recognition (ASR). Text and visual domains are not aligned as well as audio and visual domains (e.g. sound of playing piano versus the text that only says playing piano for a video of playing piano). To cure this, they consider a set of positive pairs instead of a single pair.
+If a modality is missed, the corresponding term is dropped from the loss function.
+
+\subsection{Separating Self-Expression and Visual Content in Hashtag Supervision}
+
+\begin{itemize}
+\item \href{https://openaccess.thecvf.com/content\_cvpr\_2018/papers/Veit\_Separating\_Self-Expression\_and\_CVPR\_2018\_paper.pdf}{url}
+\end{itemize}
+
+The authors train a joint model of images, hashtags, and users to perform image retrieval. This is similar to our task where given a description, we want to find the image in the scene that best matches the description. The idea is to form a three-way tensor product model. They use a ranking loss to train the model where the score of an observed triplet is higher than an unobserved triplet. They sample six negative triplets per positive sample triplet, and use each of them as a negative in the loss.
+The downstream retrieval task is then simply done by taking the arg max of the tensor product for a given user.
+
+
+
+\subsection{Semi-Heterogeneous Three-Way Joint Embedding Network for Sketch-Based Image Retrieval}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/document/8809264}{url}
+\end{itemize}
+
+\subsection{Deep Multimodal Learning for Affective Analysis and Retrieval}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/abstract/document/7277066?casa\_token=aBp6BxcszHwAAAAA:3NoMiFrZbn7tXfavF1rgkCiGWbFI2arxn8Xb6iDF79q4zBZHWi7PWWhf6xW-xJwYdFALbmRENo4}{url}
+\end{itemize}
+
+\subsection{An Efficient Framework for Zero-Shot Sketch-Based Image Retrieval}
+
+\begin{itemize}
+\item \href{https://arxiv.org/pdf/2102.04016.pdf}{url}
+\end{itemize}
+This paper uses two modalities only; image and sketch. However, it uses a \textit{quadruplet} to compute the loss which can be useful in our research. A quadruplet is composed of a sketch picture as an anchor, a negative example from sketch domain, a negative example from picture domain, and a positive example from picture domain.
+
+\subsection{SMIL: Multimodal Learning with Severely Missing Modality}
+
+\begin{itemize}
+\item \href{https://www.aaai.org/AAAI21Papers/AAAI-437.MaM.pdf}{url}
+\end{itemize}
+Uses Bayesian meta-learning framework to perform multimodal learning with partially missing modalities in training/test data.
+One of their experiments is multi-label classification of movie genres with bimodal data including poster of movies and description of the movie from IMDB.
+
+\subsection{Multimodal Language Analysis in the Wild: CMU-MOSEI Dataset and Interpretable Dynamic Fusion Graph}
+
+\begin{itemize}
+\item \href{https://aclanthology.org/P18-1208.pdf}{url}
+\end{itemize}
+
+\subsection{Multimodal Learning with Incomplete Modalities by Knowledge Distillation}
+
+\begin{itemize}
+\item \href{https://dl.acm.org/doi/pdf/10.1145/3394486.3403234}{url}
+\end{itemize}
+They first train models on each modality independently
+\subsection{SWAFN: Sentimental Words Aware Fusion Network for Multimodal Sentiment Analysis}
+
+\begin{itemize}
+\item \href{https://aclanthology.org/2020.coling-main.93.pdf}{url}
+\end{itemize}
+
+\subsection{Multimodal Learning for Human Action Recognition Via Bimodal/Multimodal Hybrid Centroid Canonical Correlation Analysis}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/document/8489981}{url}
+\end{itemize}
+
+\subsection{Deception Detection Using a Multimodal Approach}
+
+\begin{itemize}
+\item \href{https://dl.acm.org/doi/pdf/10.1145/2663204.2663229?casa\_token=KneK7B7xvLwAAAAA:Ajz0N96ygq8ktwkz0IVUqTt8NozCg2wR6n\_x2xntdHqZBh6VXW\_8VbO4GeY4VvMsDJlMwzkhVXQSJA}{url}
+\end{itemize}
+They use \textit{language}, \textit{physiological response}, and \textit{thermal sensing} to detect deceit.
+
+\subsection{M3ER: Multiplicative Multimodal Emotion Recognition using Facial, Textual, and Speech Cues}
+
+\begin{itemize}
+\item \href{https://ojs.aaai.org/index.php/AAAI/article/view/5492}{url}
+\end{itemize}
+
+\subsection{Found in Translation: Learning Robust Joint Representations by Cyclic Translations between Modalities}
+
+\begin{itemize}
+\item \href{https://ojs.aaai.org/index.php/AAAI/article/view/4666}{url}
+\end{itemize}
+\subsection{Select-Additive Learning: Improving Generalization In Multimodal Sentiment Analysis}
+
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=\&arnumber=8019301}{url}
+\end{itemize}
+
+\subsection{Attention-Based Multimodal Fusion for Video Description}
+
+\begin{itemize}
+\item \href{https://openaccess.thecvf.com/content\_ICCV\_2017/papers/Hori\_Attention-Based\_Multimodal\_Fusion\_ICCV\_2017\_paper.pdf}{url}
+\end{itemize}
+\subsection{\st{3W-AlignNet: a Feature Alignment Framework for Person Search with Three-Way Decision Theory}}
+
+\begin{itemize}
+\item \href{https://link.springer.com/article/10.1007/s12559-021-09898-7}{url}
+\end{itemize}
+
+This is not very related since they use three-way decision theory to select bounding boxes as positive, negative, and boundary.
+Three-way here refers to something else and not modalities.
+
+\subsection{\st{Unsupervised Domain Adaptation for Face Recognition in Unlabeled Videos}}
+\begin{itemize}
+\item \href{https://openaccess.thecvf.com/content\_ICCV\_2017/papers/Sohn\_Unsupervised\_Domain\_Adaptation\_ICCV\_2017\_paper.pdf}{url}
+\end{itemize}
+Might be relevant but not super relevant.
+
+
+\subsection{Heterogeneous Sensor Data Fusion By Deep Multimodal Encoding}
+\begin{itemize}
+\item \href{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7874158}{url}
+\end{itemize}
+This one takes two modalities as input and outputs predictions in a third modality.
+
+
+%===================================================================
+
