@@ -13,7 +13,7 @@ for neg in neg_sampling
 do
 for dim in 1024
 do
-sbatch run_cluster.sh five-mma-simple-cosine-lang-anchor $neg $dim $seed $task
+sbatch run_cluster.sh my-contrastive-loss-cosine-text-anchor $neg $dim $seed $task
 done
 done
 done

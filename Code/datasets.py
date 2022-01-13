@@ -172,6 +172,7 @@ class GoLD_Dataset(Dataset):
             print('negative sampling in progress ...')
             # caculate distance matrix using language embeddings
             self.dists = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(self.language_embeddings_data, metric='cosine'))
+            # self.dists = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(self.audio_embeddings_data, metric='cosine'))
             for d in range(len(self.dists)):
                 self.dists[d] = scipy.stats.rankdata(self.dists[d], method='ordinal')
     
@@ -218,7 +219,7 @@ class GoLD_Dataset(Dataset):
         return sentence.get_embedding()
     
     def proc_speech(self, audio_name):
-        audio_file = self.root_dir + 'speech/' + audio_name + '.wav'
+        audio_file = self.root_dir + 'speech_16/' + audio_name + '.wav'
         speech, _ = sf.read(audio_file)
         input_values = self.auido_processor(speech, return_tensors="pt", sampling_rate=16000).input_values.cuda()
         with torch.no_grad():

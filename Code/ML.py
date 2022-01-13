@@ -10,7 +10,7 @@ from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 
 from models import TheModel
 from datasets import load_all_data
-from losses import mma_loss
+from losses import mma_loss, contrastive_loss
 from utils import set_seeds, setup_device, initialize_result_keeper, prf_metrics, mrr_acc_metrics
 
 
@@ -81,7 +81,8 @@ def training(config, models, dataset, portion, optimizers, epoch):
         for optimizer in optimizers.values():
             optimizer.zero_grad()
         
-        batch_loss = mma_loss(data['pos'], data['neg'], models)
+        # batch_loss = mma_loss(data['pos'], data['neg'], models)
+        batch_loss = contrastive_loss(data['pos'], data['neg'], models)
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
         running_loss.update(dict(zip(batch_loss.keys(), [running_loss[key] + batch_loss[key].item() for key in batch_loss.keys()] )))
         # if batch_index % 20 == 0:
@@ -171,10 +172,11 @@ def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_n
         ar_matrix_distance = 1 - cosine_similarity(audio, rgb)
         ad_matrix_distance = 1 - cosine_similarity(audio, depth)
         la_matrix_distance = 1 - cosine_similarity(language, audio)
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2
+        matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2 # when textual language is anchor
+        # matrix_distance = (ar_matrix_distance + ad_matrix_distance) / 2 # when audio is anchor
         # matrix_distance = (lr_matrix_distance + ld_matrix_distance + la_matrix_distance) / 3
         # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4
-        matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
+        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
         # TODO Save/return all these matrices
     elif config.distance == 'euclidean':
         lr_matrix_distance = euclidean_distances(language, rgb)
