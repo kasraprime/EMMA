@@ -6,6 +6,7 @@ import scipy as sp
 import pickle, json
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_fscore_support
+import math
 
 
 def set_seeds(config):
@@ -173,3 +174,24 @@ def Visualize(pkldata,title,has_x_axis,xlablel,ylabel,xscale,yscale,legend,figsi
         plt.legend(loc='lower right')
     plt.savefig(location+title+'.png')
     plt.close('all')
+
+
+
+def adjust_learning_rate(args, optimizers, epoch):
+    # Code adopted from https://github.com/HobbitLong/SupContrast
+    lr = args.learning_rate
+    args.lr_decay_rate = 0.1
+    args.lr_decay_epochs = [120, 150, 190]
+    args.cosine = True
+    for optimizer in optimizers.values():
+        if args.cosine:
+            eta_min = lr * (args.lr_decay_rate ** 3)
+            lr = eta_min + (lr - eta_min) * (
+                    1 + math.cos(math.pi * epoch / args.epochs)) / 2
+        else:
+            steps = np.sum(epoch > np.asarray(args.lr_decay_epochs))
+            if steps > 0:
+                lr = lr * (args.lr_decay_rate ** steps)
+
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr

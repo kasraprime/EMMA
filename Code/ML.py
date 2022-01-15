@@ -10,21 +10,27 @@ from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 
 from models import TheModel
 from datasets import load_all_data
-from losses import mma_loss, contrastive_loss
-from utils import set_seeds, setup_device, initialize_result_keeper, prf_metrics, mrr_acc_metrics
+from losses import mma_loss, contrastive_loss, SupConLoss
+from utils import set_seeds, setup_device, initialize_result_keeper, prf_metrics, mrr_acc_metrics, adjust_learning_rate
 
 
-def train(config, models, dataset):
+def train(config, models, dataset, device):
 
     results, outputs, logs, reconstruct, examples = initialize_result_keeper(config)    
     
+    criterion = SupConLoss().to(device)
     # Initialize the optimizer
     optimizers = {}
     for modality in models.keys():
         model = models[modality]
-        optimizers[modality] = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+        if config.method == 'MMA':
+            optimizers[modality] = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+        elif config.method == 'supervised-contrastive':
+            optimizers[modality] = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=1e-4)
     
     for epoch in tqdm(range(config.epochs)):
+        if config.method == 'supervised-contrastive':
+            adjust_learning_rate(config, optimizers, epoch+1)
         for modality in models.keys():
             model = models[modality]
             model.train()
@@ -32,7 +38,7 @@ def train(config, models, dataset):
         results[epoch] = {}
         # do the training
         print('\ntraining for the new epoch')
-        logs[epoch] = training(config, models, dataset, 'train', optimizers, epoch)
+        logs[epoch] = training(config, models, dataset, 'train', optimizers, epoch, criterion)
 
         # evaluation on valid and possibly test        
         for portion in config.portions:
@@ -68,7 +74,7 @@ def train(config, models, dataset):
 
 
 
-def training(config, models, dataset, portion, optimizers, epoch):
+def training(config, models, dataset, portion, optimizers, epoch, criterion):
     """
     performs one epoch training loop over all data
     """
@@ -76,13 +82,19 @@ def training(config, models, dataset, portion, optimizers, epoch):
     running_loss = {
         'total': 0.0,
     }
-        
+
     for batch_index, data in enumerate(dataset[portion]):
         for optimizer in optimizers.values():
             optimizer.zero_grad()
         
-        # batch_loss = mma_loss(data['pos'], data['neg'], models)
-        batch_loss = contrastive_loss(data['pos'], data['neg'], models)
+        if config.method == 'MMA':
+            batch_loss = mma_loss(data['pos'], data['neg'], models)
+        elif config.method == 'contrastive':
+            batch_loss = contrastive_loss(data['pos'], data['neg'], models)
+        elif config.method == 'supervised-contrastive':
+            features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
+            batch_loss = criterion(features, data['pos']['object'])
+
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
         running_loss.update(dict(zip(batch_loss.keys(), [running_loss[key] + batch_loss[key].item() for key in batch_loss.keys()] )))
         # if batch_index % 20 == 0:
@@ -258,6 +270,7 @@ def load_configs():
     parser.add_argument('--split', default='view', type=str)
     parser.add_argument('--metric_mode', default='sampling', type=str)
     parser.add_argument('--metric_sample_size', default=4, type=int)
+    parser.add_argument('--method', default='supervised-contrastive', type=str)
     
     args = parser.parse_args()    
     return args
@@ -343,7 +356,7 @@ if __name__ == "__main__":
         # train-test: evaluate on test set on each epoch
         # train: only evaluate on valid set. Test once at the end
         print('Training the model ...')
-        train(config, models, data)
+        train(config, models, data, device)
         # TODO: if best result of valid is better than other experiments then perform test: test()
     elif config.eval_mode == 'test':
         print('Evaluating the model on test data ...')
