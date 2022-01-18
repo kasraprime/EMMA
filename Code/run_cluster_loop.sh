@@ -9,11 +9,12 @@ do
 for task in gold
 do
 # for neg in no_neg_sampling neg_sampling
-for neg in neg_sampling
+# for neg in neg_sampling
+for neg in no_neg_sampling
 do
 for dim in 1024
 do
-sbatch run_cluster.sh my-contrastive-loss-cosine-text-anchor $neg $dim $seed $task
+sbatch run_cluster.sh mma-simple-SGD-cosine-text-anchor $neg $dim $seed $task
 done
 done
 done

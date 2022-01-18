@@ -53,7 +53,7 @@ per_epoch='best' # 'best' or 'all'
 epoch=200
 if [ $negative_sampling = no_neg_sampling ]
 then
-batch_size=1 # batch size has to be 1 if not using negative sampling
+batch_size=64 # change batch size to 1 if not using negative sampling and using vanilla triplet loss
 elif [ $negative_sampling = neg_sampling ] && [[ " ${real[*]} " =~ " $task " ]]
 then
 batch_size=64 # 64 or 32 or 8

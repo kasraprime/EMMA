@@ -23,13 +23,13 @@ def train(config, models, dataset, device):
     optimizers = {}
     for modality in models.keys():
         model = models[modality]
-        if config.method == 'MMA':
+        if config.optimizer == 'Adam':
             optimizers[modality] = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
-        elif config.method == 'supervised-contrastive':
+        elif config.optimizer == 'SGD':
             optimizers[modality] = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=1e-4)
     
     for epoch in tqdm(range(config.epochs)):
-        if config.method == 'supervised-contrastive':
+        if config.optimizer == 'SGD':
             adjust_learning_rate(config, optimizers, epoch+1)
         for modality in models.keys():
             model = models[modality]
@@ -270,7 +270,8 @@ def load_configs():
     parser.add_argument('--split', default='view', type=str)
     parser.add_argument('--metric_mode', default='sampling', type=str)
     parser.add_argument('--metric_sample_size', default=4, type=int)
-    parser.add_argument('--method', default='supervised-contrastive', type=str)
+    parser.add_argument('--method', default='MMA', type=str)
+    parser.add_argument('--optimizer', default='SGD', type=str)
     
     args = parser.parse_args()    
     return args
