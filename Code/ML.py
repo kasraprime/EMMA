@@ -47,7 +47,9 @@ def train(config, models, dataset, device):
                 results[epoch][portion], outputs[portion] = evaluate(config, models, dataset, portion)
 
         # update best and save outputs of the model if valid f1 is the best
-        if results[epoch]['valid']['f1'] >= results['best']['best-valid']['f1']:
+        if epoch == 0: # TODO remove this if by doing evaluation first and training next whic also gives you the random performance before any training.
+            results['best']['best-valid'] = results[epoch]['valid']
+        if results[epoch]['valid']['f1_lard'] >= results['best']['best-valid']['f1_lard']:
             for modality in models.keys():
                 model = models[modality]
                 torch.save(model.state_dict(), config.results_dir+modality+'_model_state.pt')
@@ -55,7 +57,8 @@ def train(config, models, dataset, device):
             pickle.dump(outputs, open(config.results_dir+'outputs.pkl', 'wb'))
             for portion in config.portions:
                 if portion != 'train':
-                    results['best']['best-'+portion].update(dict(zip(results['best']['best-'+portion].keys(), results[epoch][portion].values())))
+                    # results['best']['best-'+portion].update(dict(zip(results['best']['best-'+portion].keys(), results[epoch][portion].values())))
+                    results['best']['best-'+portion] = results[epoch][portion]
 
         wandb.log({**{'epoch': epoch}, **logs[epoch], **results[epoch]})
         wandb.run.summary.update(results['best'])
@@ -68,7 +71,7 @@ def train(config, models, dataset, device):
 
         print(logs[epoch])
         print(results[epoch])
-        print('epoch: {}, total loss: {}, f1 valid: {}'.format(epoch, logs[epoch]['total'], results[epoch]['valid']['f1']))
+        print('epoch: {}, total loss: {}, f1 valid: {}'.format(epoch, logs[epoch]['total'], results[epoch]['valid']['f1_lard']))
         print('--- This epoch is finished ---')
     print('--- Training is done! ---')
 
@@ -135,16 +138,22 @@ def evaluate(config, models, dataset, portion):
                 outputs[key] = np.concatenate(outputs[key], axis=0)
 
         if config.metric_mode == 'sampling':
-            outputs['ground_truth'], outputs['predictions'], outputs['distances'], outputs['sampled_distances'] , outputs['all_matrix_distances'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'])
-            mrr_acc = mrr_acc_metrics(outputs)
+            outputs['ground_truth'], outputs['predictions'], outputs['matrix_distances'], outputs['sampled_distances'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'])
         elif config.metric_mode == 'threshold':
             outputs['ground_truth'], outputs['predictions'], outputs['distances'] = object_retrieval_task_threshold_full_data(config, outputs['language'], outputs['vision'], outputs['object_names'])
             mrr_acc = {} # I have not implemented it for this case and I don't think it makes sense to do it.
 
-        prf = prf_metrics(outputs['ground_truth'], outputs['predictions'])
+        mrr_acc = {}
+        prf = {}
+        for retrieval in outputs['matrix_distances'].keys():
+            mrr_acc_temp = mrr_acc_metrics(outputs['sampled_distances'][retrieval])
+            mrr_acc['mrr_'+retrieval], mrr_acc['acc_'+retrieval] = mrr_acc_temp['mrr'], mrr_acc_temp['acc']
+            prf_temp = prf_metrics(outputs['ground_truth'][retrieval], outputs['predictions'][retrieval])
+            for metric in prf_temp.keys():
+                prf[metric+'_'+retrieval] = prf_temp[metric]
         
         results = {**mrr_acc, **prf}
-        
+
         return results, outputs
 
 
@@ -184,24 +193,25 @@ def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_n
         ar_matrix_distance = 1 - cosine_similarity(audio, rgb)
         ad_matrix_distance = 1 - cosine_similarity(audio, depth)
         la_matrix_distance = 1 - cosine_similarity(language, audio)
-        matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2 # when textual language is anchor
-        # matrix_distance = (ar_matrix_distance + ad_matrix_distance) / 2 # when audio is anchor
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + la_matrix_distance) / 3
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
-        # TODO Save/return all these matrices
     elif config.distance == 'euclidean':
         lr_matrix_distance = euclidean_distances(language, rgb)
         ld_matrix_distance = euclidean_distances(language, depth)
-        ar_matrix_distance = 1 - euclidean_distances(audio, rgb)
-        ad_matrix_distance = 1 - euclidean_distances(audio, depth)
-        la_matrix_distance = 1 - euclidean_distances(language, audio)
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance) / 2
-        matrix_distance = (lr_matrix_distance + ld_matrix_distance + la_matrix_distance) / 3
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4
-        # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
+        ar_matrix_distance = euclidean_distances(audio, rgb)
+        ad_matrix_distance = euclidean_distances(audio, depth)
+        la_matrix_distance = euclidean_distances(language, audio)
     
-    all_matrix_distances = {'lr': lr_matrix_distance, 'ld': ld_matrix_distance, 'ar': ar_matrix_distance, 'ad': ad_matrix_distance, 'la': la_matrix_distance}
+    # matrix_distance = (lr_matrix_distance + ld_matrix_distance + la_matrix_distance) / 3
+    # matrix_distance = (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance + la_matrix_distance) / 5
+    # 'lad': (ld_matrix_distance + ad_matrix_distance) / 2 or 'lad': (ld_matrix_distance + la_matrix_distance) / 2 The first case makes sense when using two anchors
+    # 'lar': (lr_matrix_distance + ar_matrix_distance) / 2 or 'lad': (lr_matrix_distance + la_matrix_distance) / 2 The first case makes sense when using two anchors
+    matrix_distances = {
+        'lr': lr_matrix_distance, 'ld': ld_matrix_distance, 'ar': ar_matrix_distance, 'ad': ad_matrix_distance, 'la': la_matrix_distance,
+        'lrd': (lr_matrix_distance + ld_matrix_distance) / 2,
+        'ard': (ar_matrix_distance + ad_matrix_distance) / 2,
+        'lar': (lr_matrix_distance + ar_matrix_distance) / 2,
+        'lad': (ld_matrix_distance + ad_matrix_distance) / 2,
+        'lard': (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4,
+    }
     
     unique_objects = list(set(object_names))
     sampled_outputs = []
@@ -213,14 +223,18 @@ def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_n
 
     sampled_col_indices = np.array(sampled_outputs)
     sampled_row_indices = np.array([[i]*(config.metric_sample_size + 1) for i in range(sampled_col_indices.shape[0])])
-    sampled_distances = np.array(matrix_distance)[sampled_row_indices, sampled_col_indices]
 
-    sampled_pred = sampled_distances.argsort(1).argsort(1)
-    sampled_pred[sampled_pred >= 1] = 1
-    sampled_pred = sampled_pred != 1 # we want the index in which has 0 to be True and all other False
-    sampled_gt = np.array([[True] + [False]*(config.metric_sample_size)]*sampled_row_indices.shape[0])
+    sampled_gt = {}
+    sampled_pred = {}
+    sampled_distances = {}
+    for retrieval in matrix_distances.keys():
+        sampled_distances[retrieval] = np.array(matrix_distances[retrieval])[sampled_row_indices, sampled_col_indices]
+        sampled_pred[retrieval] = sampled_distances[retrieval].argsort(1).argsort(1)
+        sampled_pred[retrieval][sampled_pred[retrieval] >= 1] = 1
+        sampled_pred[retrieval] = sampled_pred[retrieval] != 1 # we want the index in which has 0 to be True and all other False
+        sampled_gt[retrieval] = np.array([[True] + [False]*(config.metric_sample_size)]*sampled_row_indices.shape[0])
 
-    return sampled_gt, sampled_pred, matrix_distance, sampled_distances, all_matrix_distances
+    return sampled_gt, sampled_pred, matrix_distances, sampled_distances
 
 
 

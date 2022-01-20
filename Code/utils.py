@@ -81,14 +81,14 @@ def initialize_result_keeper(config):
     
 
 
-def mrr_acc_metrics(outputs):
+def mrr_acc_metrics(sampled_distances):
     '''
     Computing mean reciprocal rank (MRR), accuracy (acc), and topk acc
     Note that the True instance is assumed to be at index 0.
     '''
-    mrr = np.mean(1 / (1 + outputs['sampled_distances'].argsort(1).argsort(1)[:,0]))
-    acc = np.sum(outputs['sampled_distances'].argsort(1).argsort(1)[:,0] == 0) / outputs['sampled_distances'].shape[0]
-    # topk_acc = np.sum(outputs['sampled_distances'].argsort(1).argsort(1)[:,0] <= 1) / outputs['sampled_distances'].shape[0] # [:, 0]<= k if the value of first index is less than k it means the correct item was selected in top k items. 
+    mrr = np.mean(1 / (1 + sampled_distances.argsort(1).argsort(1)[:,0]))
+    acc = np.sum(sampled_distances.argsort(1).argsort(1)[:,0] == 0) / sampled_distances.shape[0]
+    # topk_acc = np.sum(sampled_distances.argsort(1).argsort(1)[:,0] <= 1) / sampled_distances.shape[0] # [:, 0]<= k if the value of first index is less than k it means the correct item was selected in top k items. 
     results = {'mrr': mrr, 'acc': acc}
     return results
 
