@@ -25,6 +25,30 @@ def mma_loss(positive, negative, models, margin=0.4):
 
 
 
+def explicit_anchor_mma_loss(positive, negative, models, margin=0.4):
+    '''
+    MMA loss using cosine and explicit maximization of the two anchor points
+    '''
+    # cos_dist(a, p) - cos_dist(a, n) = 1 - cos(a,p) - (1- cos(a, n)) = cos(a, n) - cos(a, p)
+    triplet_loss = lambda a, p, n: torch.clamp(F.cosine_similarity(a, n) - F.cosine_similarity(a, p) + margin, 0.0, 2.0 + margin)
+
+    batch_loss = {'total': 0.0}
+    modalities = ['rgb', 'depth', 'audio']
+    anchor = 'language'
+    loss = 0.0
+    
+    for modality in modalities:
+        loss = loss + torch.sum(triplet_loss(models[anchor](positive[anchor])['decoded'], models[modality](positive[modality])['decoded'], models[modality](negative[modality])['decoded']))
+
+    # loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[anchor](negative[anchor])['decoded'])), 0.0 , 2.0 + margin)
+    loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[anchor](negative[anchor])['decoded']), 0.0 , 1.0 + margin))
+    # loss = loss + torch.sum(torch.clamp(-1.0 + F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[anchor](negative[anchor])['decoded'])+ margin, 0.0 , 2.0 + margin))
+    
+    batch_loss['total'] = loss / len(positive['instance']) # average loss in this batch
+    return batch_loss
+
+
+
 def contrastive_loss(positive, negative, models):
     batch_loss = {'total': 0.0}
     modalities = ['rgb', 'depth']

@@ -1,3 +1,4 @@
+from cmath import exp
 import torch
 import numpy as np
 import random
@@ -10,7 +11,7 @@ from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 
 from models import TheModel
 from datasets import load_all_data
-from losses import mma_loss, contrastive_loss, SupConLoss
+from losses import mma_loss, contrastive_loss, SupConLoss, explicit_anchor_mma_loss
 from utils import set_seeds, setup_device, initialize_result_keeper, prf_metrics, mrr_acc_metrics, adjust_learning_rate
 
 
@@ -21,16 +22,22 @@ def train(config, models, dataset, device):
     criterion = SupConLoss().to(device)
     # Initialize the optimizer
     optimizers = {}
+    schedulers = {}
     for modality in models.keys():
         model = models[modality]
         if config.optimizer == 'Adam':
             optimizers[modality] = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+            lr_lambda = lambda epoch : config.learning_rate if epoch < int(config.epochs/3) else (config.learning_rate*0.1 if epoch < int(config.epochs/3) * 2 else config.learning_rate*0.1)
+            schedulers[modality] = torch.optim.lr_scheduler.LambdaLR(optimizers[modality], lr_lambda)
         elif config.optimizer == 'SGD':
             optimizers[modality] = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=1e-4)
     
     for epoch in tqdm(range(config.epochs)):
         if config.optimizer == 'SGD':
             adjust_learning_rate(config, optimizers, epoch+1)
+        elif config.optimizer == 'Adam':
+            for scheduler in schedulers.values():
+                scheduler.step()
         for modality in models.keys():
             model = models[modality]
             model.train()
@@ -92,10 +99,12 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion):
         
         if config.method == 'MMA':
             batch_loss = mma_loss(data['pos'], data['neg'], models)
+        elif config.method == 'eMMA':
+            batch_loss = explicit_anchor_mma_loss(data['pos'], data['neg'], models)
         elif config.method == 'contrastive':
             batch_loss = contrastive_loss(data['pos'], data['neg'], models)
         elif config.method == 'supervised-contrastive':
-            features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
+            features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
             batch_loss = criterion(features, data['pos']['object'])
 
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
@@ -284,10 +293,12 @@ def load_configs():
     parser.add_argument('--split', default='view', type=str)
     parser.add_argument('--metric_mode', default='sampling', type=str)
     parser.add_argument('--metric_sample_size', default=4, type=int)
-    parser.add_argument('--method', default='MMA', type=str)
+    parser.add_argument('--method', default='eMMA', type=str)
     parser.add_argument('--optimizer', default='SGD', type=str)
     
-    args = parser.parse_args()    
+    args = parser.parse_args()
+    if args.method == 'supervised-contrastive':
+        assert(args.optimizer == 'SGD')
     return args
 
 
