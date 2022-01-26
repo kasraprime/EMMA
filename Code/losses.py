@@ -51,7 +51,7 @@ def explicit_anchor_mma_loss(positive, negative, models, margin=0.4):
 
 def contrastive_loss(positive, negative, models):
     batch_loss = {'total': 0.0}
-    modalities = ['rgb', 'depth']
+    modalities = ['rgb', 'depth', 'audio']
     anchor = 'language'
     loss = 0.0
     temperature = 0.1

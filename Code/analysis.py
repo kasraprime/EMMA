@@ -12,13 +12,10 @@ exp_ugly_names = {
     '4M-eMMA': '4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024', 
     '4M-SupCon': '4M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
     '4M-simple-MMA': '4M-mma-simple-SGD-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+    '4M-contrastive': '4M-contrastive-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
 }
 
-experiments = {
-    '4M-eMMA': {},
-    '4M-SupCon': {},
-    '4M-simple-MMA': {},
-}
+experiments = {name:{} for name in exp_ugly_names.keys()}
 
 
 for method in experiments.keys():
@@ -70,15 +67,26 @@ styles_markers = ['-o', ':+', ':o','--o','-.o', '-+', '--+','-.+', '-v',':v','--
 
 name = 'epochs'
 portion = 'test'
+metric_correct_names = {
+    'mrr_lrd': 'mrr.trd',
+    'mrr_ard': 'mrr.srd',
+    'mrr_lar': 'mrr.tsr',
+    'mrr_lad': 'mrr.tsd',
+    'mrr_lard': 'mrr.tsrd',
+    'mrr_lr': 'mrr.tr',
+    'mrr_ld': 'mrr.td',
+    'mrr_ar': 'mrr.sr',
+    'mrr_ad': 'mrr.sd',
+}
 for metr in ['mrr_lrd', 'mrr_ard', 'mrr_lard']:
 # for metr in ['mrr_ard']:
     fig = plt.figure(figsize=(25,20))
     ax = fig.add_subplot(1,1,1)
     for method_idx, method in enumerate(results.keys()):
-        plt.plot([str(epoch) for epoch in results[method]['avg'].keys()], [results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys()], styles_markers[method_idx], label=method)
-        low = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys()]) - np.asarray([results[method]['std'][epoch][portion][metr] for epoch in results[method]['std'].keys()])
-        high = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys()]) + np.asarray([results[method]['std'][epoch][portion][metr] for epoch in results[method]['std'].keys()])
-        plt.fill_between([str(epoch) for epoch in results[method]['std'].keys()], low, high, alpha=0.2)
+        plt.plot([str(epoch) for epoch in results[method]['avg'].keys() if epoch != 'best'], [results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys() if epoch != 'best'], styles_markers[method_idx], label=method)
+        low = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys() if epoch != 'best']) - np.asarray([results[method]['std'][epoch][portion][metr] for epoch in results[method]['std'].keys() if epoch != 'best'])
+        high = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys() if epoch != 'best']) + np.asarray([results[method]['std'][epoch][portion][metr] for epoch in results[method]['std'].keys() if epoch != 'best'])
+        plt.fill_between([str(epoch) for epoch in results[method]['std'].keys() if epoch != 'best'], low, high, alpha=0.2)
 
     # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
     # ax.grid(True)
@@ -88,7 +96,7 @@ for metr in ['mrr_lrd', 'mrr_ard', 'mrr_lard']:
     # plt.yticks(fontsize=30)
     plt.grid(True)
     plt.xlabel('Epoch', fontsize=40)
-    plt.ylabel(metr, fontsize=40)
+    plt.ylabel(metric_correct_names[metr], fontsize=40)
     plt.xticks(np.arange(0, len(list(results[method]['avg'].keys()))+1, 10), fontsize=30, rotation=90)
     plt.yticks(fontsize=30)
     plt.legend(loc='lower right', fontsize=40, ncol=1)

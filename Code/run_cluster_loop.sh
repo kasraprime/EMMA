@@ -14,7 +14,7 @@ for neg in no_neg_sampling
 do
 for dim in 1024
 do
-sbatch run_cluster.sh mma-simple-SGD-cosine-text-anchor $neg $dim $seed $task
+sbatch run_cluster.sh 4M-contrastive-cosine-submodalities-text-anchor $neg $dim $seed $task
 done
 done
 done
