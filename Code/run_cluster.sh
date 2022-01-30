@@ -48,6 +48,7 @@ sim=(snp_noise gauss_noise dropout_noise RIVR clean_normalized)
 real=(gold gold_raw gold_cropped gold_no_crop_old)
 
 # Frequently changing
+method='eMMA'
 data_type='rgbd' # 'rgb', 'depth', 'rgbd'
 per_epoch='best' # 'best' or 'all'
 epoch=200
@@ -82,7 +83,7 @@ scratch_data=$TMPDIR/data/
 
 
 python -u ML.py --wandb_track $track --experiment_name $exp_name --epochs $epoch --task $task --data_dir $scratch_data \
---random_seed $random_seed --embed_dim $embed_dim --data_type $data_type \
+--random_seed $random_seed --embed_dim $embed_dim --data_type $data_type --method $method \
 --prediction_thresh $pred  --results_dir $results_dir  --exp_full_name $exp_full_name \
 --learning_rate $lr --eval_mode $eval_mode  --per_epoch $per_epoch --batch_size $batch_size \
 --activation $activation --gpu_num $gpu_num --negative_sampling $negative_sampling 2>&1 | tee -a $results_dir'out.log'

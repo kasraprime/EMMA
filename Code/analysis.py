@@ -7,13 +7,26 @@ import matplotlib.pyplot as plt
 import tikzplotlib
 
 
-
 exp_ugly_names = {
-    '4M-eMMA': '4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024', 
-    '4M-SupCon': '4M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
-    '4M-simple-MMA': '4M-mma-simple-SGD-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
-    '4M-contrastive': '4M-contrastive-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+    '4M-eMMA-text': '4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+    '3M-eMMA-text': '3M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+    '4M-SupCon-text': '4M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
+    '3M-SupCon-text': '3M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
+    '4M-contrastive-text': '4M-contrastive-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+    '3M-contrastive-text': '3M-contrastive-SGD-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+
 }
+
+# exp_ugly_names = {
+    # '3M-triplet-text':  'triplet-cosine-Adam-text-anchor-gold-gold-no_neg_sampling-1024',
+    # '3M-eMMA-audio': '3M-eMMA-cosine-submodalities-audio-anchor-gold-no_neg_sampling-1024',
+    # '3m-SupCon-audio': '3M-supervised-contrastive-SGD-cosine-submodalities-audio-first-gold-no_neg_sampling-1024',
+    # '4M-simple-MMA': '4M-mma-simple-SGD-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+#     '3M-triplet-audio': 'triplet-cosine-Adam-audio16-anchor-gold-gold-no_neg_sampling-1024',
+#     '3M-eMMA-audio': '3M-eMMA-cosine-submodalities-audio-anchor-gold-no_neg_sampling-1024',
+#     '3M-eMMA-audio-Adam': '3M-eMMA-Adam-cosine-submodalities-audio-anchor-gold-no_neg_sampling-1024', # this should beat triplet.
+#     '3m-SupCon-audio': '3M-supervised-contrastive-SGD-cosine-submodalities-audio-first-gold-no_neg_sampling-1024',
+# }
 
 experiments = {name:{} for name in exp_ugly_names.keys()}
 
@@ -54,7 +67,10 @@ for method in experiments.keys():
             best_idx = np.argmax([results[method]['avg'][epoch][portion][metric] for epoch in results[method][seed].keys()])
             results[method]['std']['best'][portion][metric] = [results[method]['std'][epoch][portion][metric] for epoch in results[method][seed].keys()][best_idx]
     
-    print(f'method: {method}, best mrr_lard ** avg:', results[method]['avg']['best']['test']['mrr_lard'], f'std:', results[method]['std']['best']['test']['mrr_lard'])
+    # metr = 'mrr_ard'
+    # for metr in ['mrr', 'acc']:
+    for metr in ['mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ard', 'acc_lrd']:
+        print(f'method: {method}, best {metr} ** avg:', results[method]['avg']['best']['test'][metr], f'std:', results[method]['std']['best']['test'][metr])
 
 
 
@@ -78,7 +94,7 @@ metric_correct_names = {
     'mrr_ar': 'mrr.sr',
     'mrr_ad': 'mrr.sd',
 }
-for metr in ['mrr_lrd', 'mrr_ard', 'mrr_lard']:
+for metr in ['mrr_lrd', 'mrr_ard', 'mrr_lard', 'mrr_ar', 'mrr_ad', 'mrr_lr', 'mrr_ld']:
 # for metr in ['mrr_ard']:
     fig = plt.figure(figsize=(25,20))
     ax = fig.add_subplot(1,1,1)

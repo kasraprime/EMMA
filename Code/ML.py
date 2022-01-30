@@ -105,6 +105,7 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion):
             batch_loss = contrastive_loss(data['pos'], data['neg'], models)
         elif config.method == 'supervised-contrastive':
             features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
+            # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
             batch_loss = criterion(features, data['pos']['object'])
 
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
@@ -128,7 +129,7 @@ def evaluate(config, models, dataset, portion):
     This function runs the model over valid and/or test set
     Returns f1, precision, accuracy, and the model outputs
     """
-    outputs = {'rgb': [], 'depth': [], 'language': [], 'audio': [], 'object_names': [], 'instace_names': [], 'image_names': []}
+    outputs = {'rgb': [], 'depth': [], 'language': [], 'audio': [], 'object_names': [], 'instace_names': [], 'image_names': [], 'descriptions': []}
     
     for modality in models.keys():
         model = models[modality]
@@ -141,13 +142,14 @@ def evaluate(config, models, dataset, portion):
             outputs['object_names'].extend(data['object'])
             outputs['instace_names'].extend(data['instance'])
             outputs['image_names'].extend(data['img_name'])
+            outputs['descriptions'].extend(data['description'])
         
         for key in outputs.keys():
-            if key not in ['object_names', 'instace_names', 'image_names']:
+            if key not in ['object_names', 'instace_names', 'image_names', 'descriptions']:
                 outputs[key] = np.concatenate(outputs[key], axis=0)
 
         if config.metric_mode == 'sampling':
-            outputs['ground_truth'], outputs['predictions'], outputs['matrix_distances'], outputs['sampled_distances'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'])
+            outputs['ground_truth'], outputs['predictions'], outputs['matrix_distances'], outputs['sampled_distances'], outputs['sampled_outputs'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'])
         elif config.metric_mode == 'threshold':
             outputs['ground_truth'], outputs['predictions'], outputs['distances'] = object_retrieval_task_threshold_full_data(config, outputs['language'], outputs['vision'], outputs['object_names'])
             mrr_acc = {} # I have not implemented it for this case and I don't think it makes sense to do it.
@@ -181,7 +183,7 @@ def test(config, models, dataset, portion):
     
     wandb.run.summary.update(results['best'])
     json.dump(results, open(config.results_dir+'results.json', 'w'), indent=4)
-    pickle.dump(outputs, open(config.results_dir+'outputs.pkl', 'wb'))
+    pickle.dump(outputs, open(config.results_dir+'outputs-test.pkl', 'wb'))
 
     print('results using best model:', results['best'])
     # analyze(config, 'test')
@@ -243,7 +245,7 @@ def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_n
         sampled_pred[retrieval] = sampled_pred[retrieval] != 1 # we want the index in which has 0 to be True and all other False
         sampled_gt[retrieval] = np.array([[True] + [False]*(config.metric_sample_size)]*sampled_row_indices.shape[0])
 
-    return sampled_gt, sampled_pred, matrix_distances, sampled_distances
+    return sampled_gt, sampled_pred, matrix_distances, sampled_distances, sampled_outputs
 
 
 
