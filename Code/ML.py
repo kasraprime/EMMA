@@ -138,7 +138,7 @@ def evaluate(config, models, dataset, portion):
         for batch_index, data in enumerate(dataset[portion]):
             for modality in models.keys():
                 model = models[modality]
-                outputs[modality].append(model(data[modality])['decoded'].data.cpu().numpy())
+                outputs[modality].append(model(data[modality], mode='eval')['decoded'].data.cpu().numpy())
             outputs['object_names'].extend(data['object'])
             outputs['instace_names'].extend(data['instance'])
             outputs['image_names'].extend(data['img_name'])
@@ -149,7 +149,7 @@ def evaluate(config, models, dataset, portion):
                 outputs[key] = np.concatenate(outputs[key], axis=0)
 
         if config.metric_mode == 'sampling':
-            outputs['ground_truth'], outputs['predictions'], outputs['matrix_distances'], outputs['sampled_distances'], outputs['sampled_outputs'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'])
+            outputs['ground_truth'], outputs['predictions'], outputs['matrix_distances'], outputs['sampled_distances'], outputs['sampled_outputs'] = object_retrieval_task_sampling(config, outputs['language'], outputs['rgb'], outputs['depth'], outputs['audio'], outputs['object_names'], outputs['instace_names'])
         elif config.metric_mode == 'threshold':
             outputs['ground_truth'], outputs['predictions'], outputs['distances'] = object_retrieval_task_threshold_full_data(config, outputs['language'], outputs['vision'], outputs['object_names'])
             mrr_acc = {} # I have not implemented it for this case and I don't think it makes sense to do it.
@@ -190,7 +190,7 @@ def test(config, models, dataset, portion):
 
 
 
-def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_names):
+def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_names, instance_names):
     '''
     I assumed that languages are the rows of distance matrix, and images are the columns
     Another assumption is that number of languages and images are the same.
@@ -224,13 +224,30 @@ def object_retrieval_task_sampling(config, language, rgb, depth, audio, object_n
         'lard': (lr_matrix_distance + ld_matrix_distance + ar_matrix_distance + ad_matrix_distance) / 4,
     }
     
-    unique_objects = list(set(object_names))
     sampled_outputs = []
-    for idx, obj in enumerate(object_names):
-        sample_obj_pool = list(set(unique_objects) - set(obj))
-        indices = np.random.choice([_idx for _idx,_obj in enumerate(object_names) if _obj in sample_obj_pool], (config.metric_sample_size))
-        indices = np.insert(indices, 0, idx)
-        sampled_outputs.append(indices)
+    if config.candidate_constraint == 'unique_objects':
+        unique_objects = list(set(object_names))
+        for idx, obj in enumerate(object_names):
+            sample_obj_pool = list(set(unique_objects) - {obj})
+            indices = np.random.choice([_idx for _idx, _obj in enumerate(object_names) if _obj in sample_obj_pool], (config.metric_sample_size), replace=False)
+            indices = np.insert(indices, 0, idx)
+            sampled_outputs.append(indices)
+    elif config.candidate_constraint == 'unique_instances':
+        unique_instances = list(set(instance_names))
+        for idx, inst in enumerate(instance_names):
+            sample_instance_pool = list(set(unique_instances) - {inst})
+            similar_objects = [_idx for _idx, _inst in enumerate(instance_names) if _inst in sample_instance_pool and object_names[_idx] == object_names[idx]]
+            if len(similar_objects) != 0:
+                similar_item = np.random.choice(similar_objects, (config.metric_sample_size_similar), replace=False) # choose 1 candidate that is the same object but a different instance (e.g. apple_3 but not apple_2)
+                other_items = np.random.choice([_idx for _idx, _inst in enumerate(instance_names) if _inst in sample_instance_pool and _idx not in similar_objects], (config.metric_sample_size-config.metric_sample_size_similar), replace=False) # Choose other candiadates that are not the same instance nore same object
+                indices = np.append(other_items, similar_item)
+            else: # if there are no similar items, choose anything else
+                indices = np.random.choice([_idx for _idx, _inst in enumerate(instance_names) if _inst in sample_instance_pool and _idx not in similar_objects], (config.metric_sample_size), replace=False) # Choose other candiadates that are not the same instance and not the same object
+            indices = np.insert(indices, 0, idx)
+            sampled_outputs.append(indices)
+
+    # Third case. if unique_views:
+    # indices = np.random.choice([_idx for _idx, _obj in enumerate(object_names) if _idx != idx], (config.metric_sample_size), replace=False) # Choose other candiadates without any constrainst except not repeating the current/target idx
 
     sampled_col_indices = np.array(sampled_outputs)
     sampled_row_indices = np.array([[i]*(config.metric_sample_size + 1) for i in range(sampled_col_indices.shape[0])])
@@ -297,6 +314,8 @@ def load_configs():
     parser.add_argument('--metric_sample_size', default=4, type=int)
     parser.add_argument('--method', default='eMMA', type=str)
     parser.add_argument('--optimizer', default='SGD', type=str)
+    parser.add_argument('--candidate_constraint', default='unique_instances', type=str)
+    parser.add_argument('--metric_sample_size_similar', default=1, type=int)
     
     args = parser.parse_args()
     if args.method == 'supervised-contrastive':
