@@ -2,7 +2,7 @@
 
 # Make sure not to save the model state at all.
 for seed in 7 24 42 3407 123
-# for seed in 42
+# for seed in 24 42 3407 123
 do
 # for task in gold_no_crop gold_crop gold_no_crop_old RIVR gauss_noise dropout_noise snp_noise clean_normalized
 # for task in gold gold_raw gold_cropped
@@ -18,9 +18,10 @@ do
 # sbatch run_cluster.sh 4M-contrastive-cosine-submodalities-text-anchor-similar-objects $neg $dim $seed $task
 # sbatch run_cluster.sh 4M-contrastive-cosine-submodalities-text-anchor-unique-object $neg $dim $seed $task
 # sbatch run_cluster.sh 4M-eMMA-cosine-submodalities-text-anchor-similar-objects $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-eMMA-cosine-submodalities-text-anchor-unique-object $neg $dim $seed $task
+# sbatch run_cluster.sh 4M-full-eMMA-cosine-distance-submodalities-unique-object $neg $dim $seed $task
+sbatch run_cluster.sh 4M-extended-triplet-eMMA-cosine-distance-submodalities-unique-object $neg $dim $seed $task
 # sbatch run_cluster.sh 4M-supcon-SGD-normalize-submodalities-text-first-similar-objects $neg $dim $seed $task
-sbatch run_cluster.sh 4M-supcon-SGD-normalize-submodalities-text-first-unique-object $neg $dim $seed $task
+# sbatch run_cluster.sh 4M-supcon-SGD-cosine-submodalities-text-first-unique-object $neg $dim $seed $task
 done
 done
 done

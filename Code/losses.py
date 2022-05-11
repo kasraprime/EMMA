@@ -49,6 +49,56 @@ def explicit_anchor_mma_loss(positive, negative, models, margin=0.4):
 
 
 
+def extended_triplet_loss(positive, negative, models, margin=0.4):
+    '''
+    MMA loss using cosine and explicit maximization of the two anchor points
+    '''
+    # cos_dist(a, p) - cos_dist(a, n) = 1 - cos(a,p) - (1- cos(a, n)) = cos(a, n) - cos(a, p)
+    triplet_loss = lambda a, p, n: torch.clamp(F.cosine_similarity(a, n) - F.cosine_similarity(a, p) + margin, 0.0, 2.0 + margin)
+
+    batch_loss = {'total': 0.0}
+    modalities = ['language', 'rgb', 'depth', 'audio']
+    loss = 0.0
+    
+    for anchor in modalities:
+        for mod_j in modalities[modalities.index(anchor)+1:]:
+            loss = loss + torch.sum(triplet_loss(models[anchor](positive[anchor])['decoded'], models[mod_j](positive[mod_j])['decoded'], models[mod_j](negative[mod_j])['decoded']))
+            loss = loss + torch.sum(triplet_loss(models[anchor](negative[anchor])['decoded'], models[mod_j](negative[mod_j])['decoded'], models[mod_j](positive[mod_j])['decoded']))
+
+        # loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[anchor](negative[anchor])['decoded']) - 1 + margin, 0.0 , 1.0 + margin))
+        loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[anchor](negative[anchor])['decoded']), 0.0 , 1.0))
+    
+    batch_loss['total'] = loss / len(positive['instance']) # average loss in this batch
+    return batch_loss
+
+
+
+
+def extended_multimodal_alignment(positive, negative, models, margin=0.4):
+    '''
+    We minimize the cosine distance (1-cos) between similar pairs and minimize the cosine similarity (cos) between dissimilar pairs.
+    This is because if we use negative cosine distance for dissimilar pairs, the bad case (dissimilar points mapped close to each other) gets a loss of 0
+    loss = sum_{m=1}^{M} [ sum_{i=1}^{M} cos(pos[m], neg[i]) + sum_{j=m+1}^{M} 1 - cos(pos[m], pos[j]) ]
+    or
+    loss = sum_{m=1}^{M} cos(pos[m], neg[m]) + sum_{i=m+1}^{M} cos(pos[m], neg[i]) +  1 - cos(pos[m], pos[i])
+    '''
+    batch_loss = {'total': 0.0}
+    modalities = ['language', 'rgb', 'depth', 'audio']
+    loss = 0.0
+
+    for mod_i in modalities:
+        for mod_j in modalities[modalities.index(mod_i)+1:]:
+            loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), 0.0, 2.0))
+            # loss = loss + F.cosine_similarity(negative[mod_i], negative[mod_j]) # This is kind of duplicate because the negative set will be revisited in future data points
+        for mod_j in modalities:
+            # loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 1.0))
+            loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']) - 1 + margin, 0.0, 1.0 + margin))
+
+    batch_loss['total'] = loss / len(positive['instance']) # average loss in this batch
+    return batch_loss
+
+
+
 def contrastive_loss(positive, negative, models):
     batch_loss = {'total': 0.0}
     modalities = ['rgb', 'depth', 'audio']
@@ -154,6 +204,10 @@ class SupConLoss(nn.Module):
         anchor_dot_contrast = torch.div(
             torch.matmul(anchor_feature, contrast_feature.T),
             self.temperature)
+        # anchor_dot_contrast = torch.div(
+            # F.cosine_similarity(anchor_feature[:, None, :], contrast_feature[None, :, :], dim=-1),
+            # self.temperature)
+
         # for numerical stability
         logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
         logits = anchor_dot_contrast - logits_max.detach()

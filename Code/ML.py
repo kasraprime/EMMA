@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 
 from models import TheModel
 from datasets import load_all_data
-from losses import mma_loss, contrastive_loss, SupConLoss, explicit_anchor_mma_loss
+from losses import mma_loss, contrastive_loss, SupConLoss, explicit_anchor_mma_loss, extended_multimodal_alignment, extended_triplet_loss
 from utils import set_seeds, setup_device, initialize_result_keeper, prf_metrics, mrr_acc_metrics, adjust_learning_rate
 
 
@@ -101,6 +101,10 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion):
             batch_loss = mma_loss(data['pos'], data['neg'], models)
         elif config.method == 'eMMA':
             batch_loss = explicit_anchor_mma_loss(data['pos'], data['neg'], models)
+        elif config.method =='full-emma':
+            batch_loss = extended_multimodal_alignment(data['pos'], data['neg'], models)
+        elif config.method =='extended-triplet':
+            batch_loss = extended_triplet_loss(data['pos'], data['neg'], models)
         elif config.method == 'contrastive':
             batch_loss = contrastive_loss(data['pos'], data['neg'], models)
         elif config.method == 'supervised-contrastive':
