@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 
 from models import TheModel
 from datasets import load_all_data
-from losses import mma_loss, contrastive_loss, SupConLoss, explicit_anchor_mma_loss, extended_multimodal_alignment, extended_triplet_loss
+from losses import mma_loss, contrastive_loss, SupConLoss, explicit_anchor_mma_loss, extended_multimodal_alignment, extended_triplet_loss, binary_cross_entropy_emma
 from utils import set_seeds, setup_device, initialize_result_keeper, prf_metrics, mrr_acc_metrics, adjust_learning_rate
 
 
@@ -45,7 +45,7 @@ def train(config, models, dataset, device):
         results[epoch] = {}
         # do the training
         print('\ntraining for the new epoch')
-        logs[epoch] = training(config, models, dataset, 'train', optimizers, epoch, criterion)
+        logs[epoch] = training(config, models, dataset, 'train', optimizers, epoch, criterion, device)
 
         # evaluation on valid and possibly test        
         for portion in config.portions:
@@ -84,7 +84,7 @@ def train(config, models, dataset, device):
 
 
 
-def training(config, models, dataset, portion, optimizers, epoch, criterion):
+def training(config, models, dataset, portion, optimizers, epoch, criterion, device):
     """
     performs one epoch training loop over all data
     """
@@ -110,7 +110,15 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion):
         elif config.method == 'supervised-contrastive':
             features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
             # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
-            batch_loss = criterion(features, data['pos']['object'])
+            batch_loss = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
+        elif config.method == 'supcon-emma':
+            features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
+            batch_loss_supcon = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
+            batch_loss_emma = extended_multimodal_alignment(data['pos'], data['neg'], models)
+            batch_loss = {'total': batch_loss_emma['total'] + batch_loss_supcon['total']}
+        elif config.method == 'emma-binary-cross-entropy':
+            batch_loss = binary_cross_entropy_emma(data['pos'], data['neg'], models, device)
+            
 
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
         running_loss.update(dict(zip(batch_loss.keys(), [running_loss[key] + batch_loss[key].item() for key in batch_loss.keys()] )))

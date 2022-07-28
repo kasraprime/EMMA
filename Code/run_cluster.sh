@@ -48,7 +48,7 @@ sim=(snp_noise gauss_noise dropout_noise RIVR clean_normalized)
 real=(gold gold_raw gold_cropped gold_no_crop_old)
 
 # Frequently changing
-method='extended-triplet' #'full-emma' #'supervised-contrastive' # 'eMMA' 'contrastive' 
+method='emma-binary-cross-entropy'  #'supcon-emma' #'supervised-contrastive' #'full-emma' #'supervised-contrastive' #'extended-triplet'  # 'eMMA' 'contrastive' 
 candidate_constraint='unique_objects' #'unique_instances'
 data_type='rgbd' # 'rgb', 'depth', 'rgbd'
 per_epoch='best' # 'best' or 'all'

@@ -88,13 +88,58 @@ def extended_multimodal_alignment(positive, negative, models, margin=0.4):
 
     for mod_i in modalities:
         for mod_j in modalities[modalities.index(mod_i)+1:]:
+            # for bs in range(len(positive['instance'])):
+            #     edge = sorted([positive['instance'][bs]+' '+mod_i, positive['instance'][bs]+' '+mod_j])
+            #     print(f"{edge[0]} (pos) && {edge[1]} (pos) ")
             loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), 0.0, 2.0))
-            # loss = loss + F.cosine_similarity(negative[mod_i], negative[mod_j]) # This is kind of duplicate because the negative set will be revisited in future data points
+            # The following line is kind of duplicate because the negative set will be revisited in future data points, but it matters to do it in the same batch when they are being pushed away from positive
+            # loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 2.0))
         for mod_j in modalities:
             # loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 1.0))
+            # for bs in range(len(positive['instance'])):
+            #     edge = {'pos': positive['instance'][bs]+' '+mod_i, 'neg': negative['instance'][bs]+' '+mod_j}
+            #     edge = dict(sorted(edge.items(), key=lambda item: item[1]))
+            #     print(" && ".join(f"{value} ({key})" for key, value in edge.items()))
             loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']) - 1 + margin, 0.0, 1.0 + margin))
 
     batch_loss['total'] = loss / len(positive['instance']) # average loss in this batch
+    return batch_loss
+
+
+
+def binary_cross_entropy_emma(positive, negative, models, device, margin=0.4, temperature=0.07):
+    batch_loss = {'total': 0.0}
+    modalities = ['language', 'rgb', 'depth', 'audio']
+    loss = torch.zeros(len(positive['instance'])).to(device)
+    loss_emma = 0.0
+
+    criterion = nn.BCELoss(reduction='none')
+    sig = nn.Sigmoid()
+
+    for mod_i in modalities:
+        for mod_j in modalities[modalities.index(mod_i)+1:]:
+            predicts = torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), -1.0, 1.0) # predicts are of shape: bs
+            predicts = sig(torch.div(predicts, temperature)) # this is risky. it might produce nan
+            # print(f" **** similar predicts  ****:\n {np.mean(predicts)} ")
+            targets = torch.ones_like(predicts).to(device)
+            loss = loss + criterion(predicts, targets)
+            # my_loss = -torch.log(predicts) # I confirmed this is the same as pytorch's BCE
+            # print(f" mod_i:{mod_i}, mod_j:{mod_j}, BCE:{criterion(predicts, targets)}, my_loss:{my_loss} ")
+            # print('loss', loss)
+            loss_emma = loss_emma + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), 0.0, 2.0))
+        for mod_j in modalities:
+            predicts = torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), -1.0, 1.0)
+            predicts = sig(torch.div(predicts, temperature)) # this is risky. it might produce nan
+            # print(f" **** dissimilar predicts  ****:\n {np.mean(predicts)} ")
+            targets = torch.zeros_like(predicts).to(device)
+            loss = loss + criterion(predicts, targets)
+            # my_loss = -torch.log(1.0 - predicts) # I confirmed this is the same as pytorch's BCE
+            # print(f" mod_i:{mod_i}, mod_j:{mod_j}, BCE:{criterion(predicts, targets)}, my_loss:{my_loss} ")
+            # print('loss', loss)
+            loss_emma = loss_emma + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']) - 1 + margin, 0.0, 1.0 + margin))
+
+    assert(loss.shape[0] == len(positive['instance']))
+    batch_loss['total'] = (torch.sum(loss) + loss_emma) / len(positive['instance']) # average loss in this batch
     return batch_loss
 
 
@@ -149,7 +194,7 @@ class SupConLoss(nn.Module):
         self.contrast_mode = contrast_mode
         self.base_temperature = base_temperature
 
-    def forward(self, features, labels=None, mask=None):
+    def forward(self, features, labels=None, instances=None, mask=None):
         """Compute loss for model. If both `labels` and `mask` are None,
         it degenerates to SimCLR unsupervised loss:
         https://arxiv.org/pdf/2002.05709.pdf
@@ -229,6 +274,23 @@ class SupConLoss(nn.Module):
 
         # compute mean of log-likelihood over positive
         mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
+
+
+        # modalities = ['language', 'rgb', 'depth', 'audio']
+        # vertices = []
+        # for modality in modalities:
+        #     for instance in instances:
+        #         vertices.append(instance+' '+modality)
+            
+        # pos_edges = torch.where(mask == 1)
+        # for edge_id in range(len(pos_edges[0])):
+        #     edge = sorted([vertices[pos_edges[0][edge_id]], vertices[pos_edges[1][edge_id]]])
+        #     print(f"{edge[0]} (pos) && {edge[1]} (pos) ")
+
+        # neg_edges = torch.where(logits_mask == 1)
+        # for edge_id in range(len(neg_edges[0])):
+        #     edge = sorted([vertices[neg_edges[0][edge_id]], vertices[neg_edges[1][edge_id]]])
+        #     print(f"{edge[0]} (pos) && {edge[1]} (neg) ")
 
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
