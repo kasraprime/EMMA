@@ -5,7 +5,7 @@ from sklearn import preprocessing
 
 
 
-def mma_loss(positive, negative, models, margin=0.4):
+def mma_loss(config, positive, negative, models, margin=0.4):
     '''
     Simple MMA loss using cosine
     '''
@@ -13,8 +13,13 @@ def mma_loss(positive, negative, models, margin=0.4):
     triplet_loss = lambda a, p, n: torch.clamp(F.cosine_similarity(a, n) - F.cosine_similarity(a, p) + margin, 0.0, 2.0 + margin)
 
     batch_loss = {'total': 0.0}
-    modalities = ['rgb', 'depth']
-    anchor = 'language'
+    # modalities = ['rgb', 'depth']
+    modalities = config.modalities
+    if 'language' in modalities and 'text-anchor' in config.method:
+        anchor = 'language'
+    elif 'audio' in modalities and 'speech-anchor' in config.method:
+        anchor = 'audio'
+    modalities.remove(anchor)
     loss = 0.0
     
     for modality in modalities:
@@ -25,7 +30,7 @@ def mma_loss(positive, negative, models, margin=0.4):
 
 
 
-def explicit_anchor_mma_loss(positive, negative, models, margin=0.4):
+def explicit_anchor_mma_loss(config, positive, negative, models, margin=0.4):
     '''
     MMA loss using cosine and explicit maximization of the two anchor points
     '''
@@ -33,8 +38,13 @@ def explicit_anchor_mma_loss(positive, negative, models, margin=0.4):
     triplet_loss = lambda a, p, n: torch.clamp(F.cosine_similarity(a, n) - F.cosine_similarity(a, p) + margin, 0.0, 2.0 + margin)
 
     batch_loss = {'total': 0.0}
-    modalities = ['rgb', 'depth', 'audio']
-    anchor = 'language'
+    # modalities = ['rgb', 'depth', 'audio']
+    modalities = config.modalities
+    if 'language' in modalities and 'text-anchor' in config.method:
+        anchor = 'language'
+    elif 'audio' in modalities and 'speech-anchor' in config.method:
+        anchor = 'audio'
+    modalities.remove(anchor)
     loss = 0.0
     
     for modality in modalities:
@@ -49,7 +59,7 @@ def explicit_anchor_mma_loss(positive, negative, models, margin=0.4):
 
 
 
-def extended_triplet_loss(positive, negative, models, margin=0.4):
+def extended_triplet_loss(config, positive, negative, models, margin=0.4):
     '''
     MMA loss using cosine and explicit maximization of the two anchor points
     '''
@@ -57,7 +67,8 @@ def extended_triplet_loss(positive, negative, models, margin=0.4):
     triplet_loss = lambda a, p, n: torch.clamp(F.cosine_similarity(a, n) - F.cosine_similarity(a, p) + margin, 0.0, 2.0 + margin)
 
     batch_loss = {'total': 0.0}
-    modalities = ['language', 'rgb', 'depth', 'audio']
+    # modalities = ['language', 'rgb', 'depth', 'audio']
+    modalities = config.modalities
     loss = 0.0
     
     for anchor in modalities:
@@ -74,7 +85,7 @@ def extended_triplet_loss(positive, negative, models, margin=0.4):
 
 
 
-def extended_multimodal_alignment(positive, negative, models, margin=0.4):
+def extended_multimodal_alignment(config, positive, negative, models, margin=0.4):
     '''
     We minimize the cosine distance (1-cos) between similar pairs and minimize the cosine similarity (cos) between dissimilar pairs.
     This is because if we use negative cosine distance for dissimilar pairs, the bad case (dissimilar points mapped close to each other) gets a loss of 0
@@ -83,7 +94,8 @@ def extended_multimodal_alignment(positive, negative, models, margin=0.4):
     loss = sum_{m=1}^{M} cos(pos[m], neg[m]) + sum_{i=m+1}^{M} cos(pos[m], neg[i]) +  1 - cos(pos[m], pos[i])
     '''
     batch_loss = {'total': 0.0}
-    modalities = ['language', 'rgb', 'depth', 'audio']
+    # modalities = ['language', 'rgb', 'depth', 'audio']
+    modalities = config.modalities
     loss = 0.0
 
     for mod_i in modalities:
@@ -92,8 +104,9 @@ def extended_multimodal_alignment(positive, negative, models, margin=0.4):
             #     edge = sorted([positive['instance'][bs]+' '+mod_i, positive['instance'][bs]+' '+mod_j])
             #     print(f"{edge[0]} (pos) && {edge[1]} (pos) ")
             loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), 0.0, 2.0))
-            # The following line is kind of duplicate because the negative set will be revisited in future data points, but it matters to do it in the same batch when they are being pushed away from positive
-            # loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 2.0))
+            if 'pull-neg' in config.method:
+                # This case is kind of duplicate since the negative set will be revisited in future data points, but it matters to do it in the same batch when they are being pushed away from positive
+                loss = loss + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 2.0))
         for mod_j in modalities:
             # loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 1.0))
             # for bs in range(len(positive['instance'])):
@@ -107,9 +120,10 @@ def extended_multimodal_alignment(positive, negative, models, margin=0.4):
 
 
 
-def binary_cross_entropy_emma(positive, negative, models, device, margin=0.4, temperature=0.07):
+def binary_cross_entropy_emma(config, positive, negative, models, device, margin=0.4, temperature=0.07):
     batch_loss = {'total': 0.0}
-    modalities = ['language', 'rgb', 'depth', 'audio']
+    # modalities = ['language', 'rgb', 'depth', 'audio']
+    modalities = config.modalities
     loss = torch.zeros(len(positive['instance'])).to(device)
     loss_emma = 0.0
 
@@ -127,6 +141,9 @@ def binary_cross_entropy_emma(positive, negative, models, device, margin=0.4, te
             # print(f" mod_i:{mod_i}, mod_j:{mod_j}, BCE:{criterion(predicts, targets)}, my_loss:{my_loss} ")
             # print('loss', loss)
             loss_emma = loss_emma + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), 0.0, 2.0))
+            if 'pull-neg' in config.method:
+                # This case is kind of duplicate since the negative set will be revisited in future data points, but it matters to do it in the same batch when they are being pushed away from positive
+                loss_emma = loss_emma + torch.sum(torch.clamp(1 - F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), 0.0, 2.0))
         for mod_j in modalities:
             predicts = torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), -1.0, 1.0)
             predicts = sig(torch.div(predicts, temperature)) # this is risky. it might produce nan
@@ -144,10 +161,15 @@ def binary_cross_entropy_emma(positive, negative, models, device, margin=0.4, te
 
 
 
-def contrastive_loss(positive, negative, models):
+def contrastive_loss(config, positive, negative, models):
     batch_loss = {'total': 0.0}
-    modalities = ['rgb', 'depth', 'audio']
-    anchor = 'language'
+    # modalities = ['rgb', 'depth', 'audio']
+    modalities = config.modalities
+    if 'language' in modalities and 'text-anchor' in config.method:
+        anchor = 'language'
+    elif 'audio' in modalities and 'speech-anchor' in config.method:
+        anchor = 'audio'
+    modalities.remove(anchor)
     loss = 0.0
     temperature = 0.1
 

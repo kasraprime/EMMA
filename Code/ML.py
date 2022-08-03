@@ -98,26 +98,32 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion, dev
             optimizer.zero_grad()
         
         if config.method == 'MMA':
-            batch_loss = mma_loss(data['pos'], data['neg'], models)
+            batch_loss = mma_loss(config, data['pos'], data['neg'], models)
         elif config.method == 'eMMA':
-            batch_loss = explicit_anchor_mma_loss(data['pos'], data['neg'], models)
-        elif config.method =='full-emma':
-            batch_loss = extended_multimodal_alignment(data['pos'], data['neg'], models)
+            batch_loss = explicit_anchor_mma_loss(config, data['pos'], data['neg'], models)
+        elif config.method =='full-emma' or config.method == 'full-emma-pull-neg':
+            batch_loss = extended_multimodal_alignment(config, data['pos'], data['neg'], models)
         elif config.method =='extended-triplet':
-            batch_loss = extended_triplet_loss(data['pos'], data['neg'], models)
+            batch_loss = extended_triplet_loss(config, data['pos'], data['neg'], models)
         elif config.method == 'contrastive':
-            batch_loss = contrastive_loss(data['pos'], data['neg'], models)
-        elif config.method == 'supervised-contrastive':
-            features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
-            # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
+            batch_loss = contrastive_loss(config, data['pos'], data['neg'], models)
+        elif config.method == 'supcon':
+            features = models[config.modalities[0]](data['pos'][config.modalities[0]])['decoded'].unsqueeze(1)
+            for modality in config.modalities[1:]:
+                features = torch.cat([features, models[modality](data['pos'][modality])['decoded'].unsqueeze(1)], dim=1)
+            features_org = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
+            assert(torch.equal(features, features_org))
             batch_loss = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
-        elif config.method == 'supcon-emma':
-            features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
+        elif config.method == 'supcon-emma' or config.method == 'supcon-emma-pull-neg':
+            features = models[config.modalities[0]](data['pos'][config.modalities[0]])['decoded'].unsqueeze(1)
+            for modality in config.modalities[1:]:
+                features = torch.cat([features, models[modality](data['pos'][modality])['decoded'].unsqueeze(1)], dim=1)
+            # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
             batch_loss_supcon = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
-            batch_loss_emma = extended_multimodal_alignment(data['pos'], data['neg'], models)
+            batch_loss_emma = extended_multimodal_alignment(config, data['pos'], data['neg'], models)
             batch_loss = {'total': batch_loss_emma['total'] + batch_loss_supcon['total']}
-        elif config.method == 'emma-binary-cross-entropy':
-            batch_loss = binary_cross_entropy_emma(data['pos'], data['neg'], models, device)
+        elif config.method == 'bce-emma' or config.method == 'bce-emma-pull-neg':
+            batch_loss = binary_cross_entropy_emma(config, data['pos'], data['neg'], models, device)
             
 
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
@@ -316,7 +322,7 @@ def load_configs():
     parser.add_argument('--eval_mode', default='train-test', type=str, help='whether to test or just train. train-test, train, test')
     parser.add_argument('--results_dir', default='./results/', type=str)
     parser.add_argument('--exp_full_name', default='pgll-Gaussian', type=str)
-    parser.add_argument('--data_type', default='rgbd', type=str)
+    parser.add_argument('--data_type', default='lard', type=str)
     parser.add_argument('--negative_sampling', default='neg_sampling', type=str)
     parser.add_argument('--per_epoch', default='best', type=str, help='save example predictions and reconstructed images per epoch or only for the best model')
     parser.add_argument('--clip', default=0.45, type=float)
@@ -341,12 +347,16 @@ if __name__ == "__main__":
     config = load_configs()
     
     # TODO cdta color depth text audio
-    if config.data_type == 'rgbd':
-        config.domains = ['rgb', 'depth']
-    elif config.data_type == 'rgb':
-        config.domains = ['rgb']
-    elif config.data_type == 'depth':
-        config.domains = ['depth']
+    config.modalities = []
+    if 'l' in config.data_type:
+        config.modalities.append('language')
+    if 'a' in config.data_type:
+        config.modalities.append('audio')
+    if 'r' in config.data_type:
+        config.modalities.append('rgb')
+    if 'd' in config.data_type:
+        config.modalities.append('depth')
+    
     
     set_seeds(config)
     device = setup_device(config.gpu_num)
