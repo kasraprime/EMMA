@@ -14,8 +14,10 @@ for neg in no_neg_sampling
 do
 for dim in 1024
 do
-# for method in full-emma bce-emma supcon-emma supcon extended-triplet eMMA-text-anchor contrastive-text-anchor
-for method in full-emma-pull-neg
+# for method in full-emma bce-emma supcon-emma supcon extended-triplet eMMA-text-anchor contrastive-text-anchor supcon-emma-pull-neg
+# for method in full-emma-pull-neg
+# for method in supcon-emma
+for method in supcon
 do
 # for modalities in lard lrd ard lar lad lr ld ar ad
 for modalities in lard

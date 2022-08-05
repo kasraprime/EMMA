@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=sim2real-gold
+#SBATCH --job-name=MMA
 #SBATCH --mem=80000
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16

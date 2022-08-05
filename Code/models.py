@@ -16,14 +16,14 @@ class TheModel(torch.nn.Module):
         self.fc3 = torch.nn.Linear(feature_size, embed_dim)
         # End of mapping layers
         
-    def forward(self, feature, mode='train'):
+    def forward(self, feature, mode='train', method='emma'):
         output = {}
         output['feature'] = feature.to(self.device)
         output['decoded'] = F.relu(self.fc1(output['feature']))
         output['decoded'] = F.relu(self.fc2(output['decoded']))
         output['decoded'] = self.fc3(output['decoded'])
 
-        if self.config.method == 'supervised-contrastive' and mode == 'train':
+        if method == 'supcon' and mode == 'train':
         # if mode == 'train': # if you want to use normalized embeddings for all methods, uncomment this one, and comment line above
             output['decoded'] = F.normalize(output['decoded'], dim=1)
 

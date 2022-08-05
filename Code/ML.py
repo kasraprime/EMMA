@@ -108,16 +108,14 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion, dev
         elif config.method == 'contrastive':
             batch_loss = contrastive_loss(config, data['pos'], data['neg'], models)
         elif config.method == 'supcon':
-            features = models[config.modalities[0]](data['pos'][config.modalities[0]])['decoded'].unsqueeze(1)
+            features = models[config.modalities[0]](data['pos'][config.modalities[0]], method='supcon')['decoded'].unsqueeze(1)
             for modality in config.modalities[1:]:
-                features = torch.cat([features, models[modality](data['pos'][modality])['decoded'].unsqueeze(1)], dim=1)
-            features_org = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1)], dim=1)
-            assert(torch.equal(features, features_org))
+                features = torch.cat([features, models[modality](data['pos'][modality], method='supcon')['decoded'].unsqueeze(1)], dim=1)
             batch_loss = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
         elif config.method == 'supcon-emma' or config.method == 'supcon-emma-pull-neg':
-            features = models[config.modalities[0]](data['pos'][config.modalities[0]])['decoded'].unsqueeze(1)
+            features = models[config.modalities[0]](data['pos'][config.modalities[0]], method='supcon')['decoded'].unsqueeze(1)
             for modality in config.modalities[1:]:
-                features = torch.cat([features, models[modality](data['pos'][modality])['decoded'].unsqueeze(1)], dim=1)
+                features = torch.cat([features, models[modality](data['pos'][modality], method='supcon')['decoded'].unsqueeze(1)], dim=1)
             # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
             batch_loss_supcon = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
             batch_loss_emma = extended_multimodal_alignment(config, data['pos'], data['neg'], models)
