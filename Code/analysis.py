@@ -8,14 +8,21 @@ import tikzplotlib
 
 
 exp_ugly_names = {
-    '4M-eMMA-text': '4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
-    '3M-eMMA-text': '3M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
-    '4M-SupCon-text': '4M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
-    '3M-SupCon-text': '3M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
-    '4M-contrastive-text': '4M-contrastive-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
-    '3M-contrastive-text': '3M-contrastive-SGD-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
-
+    'Geometric': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupCon': 'exp-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMA': 'exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Contrastive': 'exp-contrastive-org-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 }
+
+
+# exp_ugly_names = {
+#     '4M-eMMA-text': '4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+#     '3M-eMMA-text': '3M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+#     '4M-SupCon-text': '4M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
+#     '3M-SupCon-text': '3M-supervised-contrastive-SGD-cosine-submodalities-text-first-gold-no_neg_sampling-1024',
+#     '4M-contrastive-text': '4M-contrastive-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+#     '3M-contrastive-text': '3M-contrastive-SGD-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
+# }
 
 # exp_ugly_names = {
     # '3M-triplet-text':  'triplet-cosine-Adam-text-anchor-gold-gold-no_neg_sampling-1024',
@@ -32,10 +39,11 @@ experiments = {name:{} for name in exp_ugly_names.keys()}
 
 
 for method in experiments.keys():
-    for seed in [7, 24, 42]:
-        experiments[method]['seed-'+str(seed)] = glob(os.path.join('results', f'*{exp_ugly_names[method]}*/seed-{str(seed)}/'), recursive=True)[0]
+    for seed in [7, 24, 42, 123, 3407]:
+        experiments[method]['seed-'+str(seed)] = glob(os.path.join('results', f'{exp_ugly_names[method]}/seed-{str(seed)}/'), recursive=True)[0]
+        # experiments[method]['seed-'+str(seed)] = glob(os.path.join('results', f'*{exp_ugly_names[method]}*/seed-{str(seed)}/'), recursive=True)[0]
 
-# print(experiments)
+print(experiments)
 
 
 results = {}
@@ -69,14 +77,14 @@ for method in experiments.keys():
     
     # metr = 'mrr_ard'
     # for metr in ['mrr', 'acc']:
-    for metr in ['mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ard', 'acc_lrd']:
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']:
         print(f'method: {method}, best {metr} ** avg:', results[method]['avg']['best']['test'][metr], f'std:', results[method]['std']['best']['test'][metr])
 
 
 
 markers = ['P', '^', 's', 'o','v','<','>','8', 'p','*','h','H','D','d','X']
 styles = ['-',':','--','-.','|']
-styles_markers = ['-o', ':+', ':o','--o','-.o', '-+', '--+','-.+', '-v',':v','--v','-.v']
+styles_markers = ['-o', ':+', '-.^', '--s', '-.o', '-+', '--+', '-.+', ':o', '-v', '--v', '-.v']
 # colors = {'f1': 'magenta', 'precision': 'red', 'recall':'blue'}
 
 
@@ -94,7 +102,7 @@ metric_correct_names = {
     'mrr_ar': 'mrr.sr',
     'mrr_ad': 'mrr.sd',
 }
-for metr in ['mrr_lrd', 'mrr_ard', 'mrr_lard', 'mrr_ar', 'mrr_ad', 'mrr_lr', 'mrr_ld']:
+for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
 # for metr in ['mrr_ard']:
     fig = plt.figure(figsize=(25,20))
     ax = fig.add_subplot(1,1,1)

@@ -2,3 +2,4 @@ Code/results/
 Code/wandb/
 Code/__pycache__
 data/*.pkl
+tutorial/

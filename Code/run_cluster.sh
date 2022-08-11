@@ -26,6 +26,7 @@ task=$9 # gold , RIVR , gauss_noise , dropout_noise , snp_noise , clean_normaliz
 # activation=$9 # softplus, relu, tanh, softmax
 
 eval_mode='train-test' # train , train-test , test
+# eval_mode='test'
 activation='relu'
 optimizer='SGD'
 lr=0.001
@@ -33,6 +34,7 @@ lr=0.001
 # setup directories
 exp_full_name=$exp_name'-'$method'-'$data_type'-'$batch_size'-'$activation'-'$optimizer'-'$lr'-'$candidate_constraint'-'$task'-'$negative_sampling'-'$embed_dim
 results_dir='results/'$exp_name'-'$method'-'$data_type'-'$batch_size'-'$activation'-'$optimizer'-'$lr'-'$candidate_constraint'-'$task'-'$negative_sampling'-'$embed_dim'/seed-'$random_seed'/'
+# results_dir='results/duplicate/'$exp_name'-'$method'-'$data_type'-'$batch_size'-'$activation'-'$optimizer'-'$lr'-'$candidate_constraint'-'$task'-'$negative_sampling'-'$embed_dim'/seed-'$random_seed'/'
 train_result_dir=$results_dir'train/'
 valid_result_dir=$results_dir'valid/'
 test_result_dir=$results_dir'test/'

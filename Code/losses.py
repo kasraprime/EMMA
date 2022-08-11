@@ -163,17 +163,38 @@ def binary_cross_entropy_emma(config, positive, negative, models, device, margin
 
 def contrastive_loss(config, positive, negative, models):
     batch_loss = {'total': 0.0}
-    # modalities = ['rgb', 'depth', 'audio']
     modalities = config.modalities
-    if 'language' in modalities and 'text-anchor' in config.method:
-        anchor = 'language'
-    elif 'audio' in modalities and 'speech-anchor' in config.method:
-        anchor = 'audio'
-    modalities.remove(anchor)
     loss = 0.0
     temperature = 0.1
 
-    for modality in modalities:
+    # Last formulation: negative items also become anchor and that is why we have _pos and _neg. pos and neg are not used to indicate positive and negative connection to an anchor, but rather to show positive and negative anchor
+    # This formulation does not consider similarity between all items in the batch, but rather only considre the 8 points we have (4 positives and 4 negatives)
+    for mod_i in modalities:
+        denominator_pos = 0.0
+        denominator_neg = 0.0
+        for mod_j in modalities:
+            denominator_pos = denominator_pos + torch.exp(torch.div(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), temperature))
+            denominator_neg = denominator_neg + torch.exp(torch.div(F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), temperature))
+            if mod_j != mod_i:
+                denominator_pos = denominator_pos + torch.exp(torch.div(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), temperature))
+                denominator_neg = denominator_neg + torch.exp(torch.div(F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), temperature))
+        
+        for mod_j in modalities:
+            if mod_j != mod_i:
+                numerator_pos = torch.div(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](positive[mod_j])['decoded']), temperature)
+                loss = loss + torch.sum(numerator_pos - torch.log(denominator_pos))
+
+                numerator_neg = torch.div(F.cosine_similarity(models[mod_i](negative[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']), temperature)
+                loss = loss + torch.sum(numerator_neg - torch.log(denominator_neg))
+
+
+    ## First formulation: Fixed anchor. Similar to triplet
+    # if 'language' in modalities and 'text-anchor' in config.method:
+        # anchor = 'language'
+    # elif 'audio' in modalities and 'speech-anchor' in config.method:
+        # anchor = 'audio'
+    # modalities.remove(anchor)
+    # for modality in modalities:
         # numerator = torch.matmul(models[anchor](positive[anchor])['decoded'], models[modality](positive[modality])['decoded'].T)
         # denominator_pos = torch.matmul(models[anchor](positive[anchor])['decoded'],models[modality](positive[modality])['decoded'].T)
         # denominator_neg = torch.matmul(models[anchor](positive[anchor])['decoded'],models[modality](negative[modality])['decoded'].T)
@@ -182,14 +203,16 @@ def contrastive_loss(config, positive, negative, models):
         # denominator_pos = torch.div(torch.diagonal(denominator_pos), temperature)
         # denominator_neg = torch.div(torch.diagonal(denominator_neg), temperature)
 
-        numerator = torch.div(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[modality](positive[modality])['decoded']), temperature)
-        denominator_pos = torch.div(F.cosine_similarity(models[anchor](positive[anchor])['decoded'],models[modality](positive[modality])['decoded']), temperature)
-        denominator_neg = torch.div(F.cosine_similarity(models[anchor](positive[anchor])['decoded'],models[modality](negative[modality])['decoded']), temperature)
+        ## First formulation with cos similarity instead of matmul
+        # numerator = torch.div(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[modality](positive[modality])['decoded']), temperature)
+        # denominator_pos = torch.div(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[modality](positive[modality])['decoded']), temperature)
+        # denominator_neg = torch.div(F.cosine_similarity(models[anchor](positive[anchor])['decoded'], models[modality](negative[modality])['decoded']), temperature)
 
-        denominator = torch.log(torch.exp(denominator_pos) + torch.exp(denominator_neg))
+        # denominator = torch.log(torch.exp(denominator_pos) + torch.exp(denominator_neg))
 
-        # print(f'numerator: {numerator}, denominator: {denominator}')
-        loss = loss + torch.sum(numerator - denominator)
+        # # print(f'numerator: {numerator}, denominator: {denominator}')
+        # loss = loss + torch.sum(numerator - denominator)
+        ## END of First formulation
 
     batch_loss['total'] = - loss / len(positive['instance']) # average loss in this batch 
     # TODO: alternatively, you can remove torch.sum when adding to loss, and remove division be len of positive instances, and instead have torch.mean(loss)
@@ -197,8 +220,32 @@ def contrastive_loss(config, positive, negative, models):
     return batch_loss
 
 
-def original_contrastive_loss():
-    pass
+def original_contrastive_loss(config, positive, models, temperature=0.1):
+    batch_loss = {'total': 0.0}
+    loss = 0.0
+
+    # Feature should be: batch_size X num_modalities X embed_dim
+    features = models[config.modalities[0]](positive[config.modalities[0]])['decoded'].unsqueeze(1)
+    for modality in config.modalities[1:]:
+        features = torch.cat([features, models[modality](positive[modality])['decoded'].unsqueeze(1)], dim=1)
+    
+    features = features.view(features.shape[0] * features.shape[1], -1) # Makes a matrix of all items in the batch: (batch_size * num_modalities) X embed_dim
+    features = F.normalize(features, dim=1)
+    
+    sim_matrix = torch.div(torch.matmul(features, features.T), temperature)
+    # assert(sim_matrix[0][1] == F.cosine_similarity(features[0], features[1], dim=0)/temperature) # Because of rounding errors these two won't be exactly similar
+    
+    for i in range(sim_matrix.shape[0]):
+        denom = torch.sum(torch.exp(sim_matrix[i][:i])) + torch.sum(torch.exp(sim_matrix[i][i+1:])) # Sum of similarites between anchor and all other points excluding anchor itself
+        low = (i // len(config.modalities)) * len(config.modalities)
+        high = low + len(config.modalities) #should've had an additional -1 but since range(low, high) doesn't include high, I omitted the -1
+        for p in range(low, high):
+            if p != i:
+                numerator = sim_matrix[i][p]
+                loss = loss + numerator - torch.log(denom)
+
+    batch_loss['total'] = - loss / len(positive['instance']) # average loss in this batch 
+    return batch_loss
 
 
 # Code adopted from https://github.com/HobbitLong/SupContrast
