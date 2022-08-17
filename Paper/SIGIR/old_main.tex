@@ -1,0 +1,255 @@
+\documentclass[sigconf,natbib=true,anonymous=true]{acmart}
+% \documentclass[manuscript,screen,review]{acmart}
+
+% Needed to fix an acmart problem with line numbering. AFAICT line 
+% numbers are not expected in sigconf, so it should be a no-op.
+\makeatletter
+\providecommand{\@LN}[2]{}
+\makeatother
+
+% % Fonts used in the template cannot be substituted; margin 
+% % adjustments are not allowed.
+% %
+% % \BibTeX command to typeset BibTeX logo in the docs
+% \AtBeginDocument{%
+%   \providecommand\BibTeX{{%
+%     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+%% Rights management information.  This information is sent to you
+%% when you complete the rights form.  These commands have SAMPLE
+%% values in them; it is your responsibility as an author to replace
+%% the commands and values with those provided to you when you
+%% complete the rights form.
+\setcopyright{acmcopyright}
+\copyrightyear{2022}
+\acmYear{2022}
+\acmDOI{XXXXXXX.XXXXXXX}
+
+%% These commands are for a PROCEEDINGS abstract or paper.
+\acmConference[SIGIR '22]{Make sure to enter the correct
+  conference title from your rights confirmation email}{June 03--05,
+  2022}{Madrid, Spain}
+%
+%  Uncomment \acmBooktitle if the title of the proceedings is different
+%  from ``Proceedings of ...''!
+%
+\acmBooktitle{SIGIR '22: Proceedings of the 45th International ACM SIGIR Conference on Research and Development in Information Retrieval,
+ July 11--15, 2022, Madrid, Spain} 
+% \acmPrice{15.00}
+% \acmISBN{978-1-4503-XXXX-X/18/06}
+
+%
+% Submission ID.
+% Use this when submitting an article to a sponsored event. You'll
+% receive a unique submission ID from the organizers
+% of the event, and this ID should be used as the parameter to this command.
+% \acmSubmissionID{123-A56-BU3}
+
+%
+% The majority of ACM publications use numbered citations and
+% references.  The command \citestyle{authoryear} switches to the
+% "author year" style.
+%
+% If you are preparing content for an event
+% sponsored by ACM SIGGRAPH, you must use the "author year" style of
+% citations and references.
+% Uncommenting
+% the next command will enable that style.
+%\citestyle{acmauthoryear}
+
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+\author{Ben Trovato}
+\authornote{Both authors contributed equally to this research.}
+\email{trovato@corporation.com}
+\orcid{1234-5678-9012}
+\author{G.K.M. Tobin}
+\authornotemark[1]
+\email{webmaster@marysville-ohio.com}
+\affiliation{%
+  \institution{Institute for Clarity in Documentation}
+  \streetaddress{P.O. Box 1212}
+  \city{Dublin}
+  \state{Ohio}
+  \country{USA}
+  \postcode{43017-6221}
+}
+
+\author{Lars Th{\o}rv{\"a}ld}
+\affiliation{%
+  \institution{The Th{\o}rv{\"a}ld Group}
+  \streetaddress{1 Th{\o}rv{\"a}ld Circle}
+  \city{Hekla}
+  \country{Iceland}}
+\email{larst@affiliation.org}
+
+\author{Valerie B\'eranger}
+\affiliation{%
+  \institution{Inria Paris-Rocquencourt}
+  \city{Rocquencourt}
+  \country{France}
+}
+
+\author{Aparna Patel}
+\affiliation{%
+ \institution{Rajiv Gandhi University}
+ \streetaddress{Rono-Hills}
+ \city{Doimukh}
+ \state{Arunachal Pradesh}
+ \country{India}}
+
+\author{Huifen Chan}
+\affiliation{%
+  \institution{Tsinghua University}
+  \streetaddress{30 Shuangqing Rd}
+  \city{Haidian Qu}
+  \state{Beijing Shi}
+  \country{China}}
+
+\author{Charles Palmer}
+\affiliation{%
+  \institution{Palmer Research Laboratories}
+  \streetaddress{8600 Datapoint Drive}
+  \city{San Antonio}
+  \state{Texas}
+  \country{USA}
+  \postcode{78229}}
+\email{cpalmer@prl.com}
+
+\author{John Smith}
+\affiliation{%
+  \institution{The Th{\o}rv{\"a}ld Group}
+  \streetaddress{1 Th{\o}rv{\"a}ld Circle}
+  \city{Hekla}
+  \country{Iceland}}
+\email{jsmith@affiliation.org}
+
+\author{Julius P. Kumquat}
+\affiliation{%
+  \institution{The Kumquat Consortium}
+  \city{New York}
+  \country{USA}}
+\email{jpkumquat@consortium.net}
+
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+% EDITING LINK: 
+% https://www.overleaf.com/3575751412sjsdmszkxsyh
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+
+% \usepackage{soul} %% Soul does not play well with acmart
+\usepackage{url}
+% % \usepackage[hidelinks]{hyperref}https://www.overleaf.com/project/614b5cc61d38655dce466002
+% \usepackage[small]{caption}
+\usepackage{graphicx}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{cleveref}
+\usepackage{lipsum}
+
+\urlstyle{same}
+
+% % =======================================
+% % my imported packages
+
+\usepackage{amsmath}
+\usepackage{bm}
+% \usepackage{amssymb}          % duplicates something in acmart
+\usepackage{listings}
+% \usepackage[ruled,vlined]{algorithm2e}
+\include{pythonlisting}
+
+\newcommand{\pseudosection}[1]{\vspace{1.5ex}\noindent \textit{{#1:~~}}}
+% \newcommand{\pseudosection}[1]\indent{{{}}}
+
+\usepackage{todonotes}
+\newcommand{\todokdinline}[1]{\todo[color=red!20,inline]{{KD: \small #1}}}
+\newcommand{\todokd}[1]{\todo[color=red!20]{{\small #1 -- Kasra}}}
+% \newcommand{\todocainline}[1]{\todo[color=yellow!20,inline]{{CA: \small #1}}}
+\newcommand{\todocm}[1]{\todo[color=green!40]{\small #1 -- Cynthia}}
+\newcommand{\todocmi}[1]{\todo[inline,color=green!40]{\small #1 -- Cynthia}}
+\newcommand{\todoff}[1]{\todo[color=blue!20]{\small #1 -- Frank}}
+\newcommand{\todoed}[1]{\todo[color=cyan!20]{\small #1 -- Ed}}
+
+\newcommand{\CitationNeeded}[1]{{\textbf {\color{red}Cite #1}}}
+\newcommand{\ProofRead}[1]{{\textbf {\color{red}Proofread please #1}}}
+\newcommand{\Complete}[0]{{\textbf {\color{red}Complete it }}}
+\newcommand{\Rephrase}[1]{{\textbf {\color{red}Rephrase please #1}}}
+
+% \newcommand{\citet}[1]{\cite{#1}} % This is used because \citet didn't work with their author kit % It does now
+
+% =======================================
+\title{Multimodal Contrastive Learning for Object Retrieval in the Face of Modality Failures}
+
+\begin{document}
+
+% Todo list
+% \begin{enumerate}
+%     \item \st{Lit search}
+% \end{enumerate}
+% \newpage
+
+% ***************** The BEGINNING of the paper *****************
+
+\settopmatter{printfolios=true} % Page numbers please 
+% 9 pages without references.
+
+% \begin{enumerate}
+%     \item Objects of five things we select from
+%     \item \textcolor{green}{DONE} Adding an overview of the whole process 
+%     \item \textcolor{blue}{PROG} Go into more details in section 4 and give examples 
+%     \item Move images around
+%     \item Quant result section is not complete
+%     \item \textcolor{green}{DONE} put the graphs in modality ablation or merge quant and qual
+%     \item \textcolor{green}{DONE} add dropping R D graphs
+%     \item A paragraph in related work about grounded language 
+%     % \item Don't mess with additional experiments
+% \end{enumerate}
+%===================================================================
+
+\maketitle
+% \setcounter{page}{1}
+
+%===================================================================
+
+% \section{SIGIR Papers}
+% \begin{enumerate}
+%     \item \href{https://dl.acm.org/doi/pdf/10.1145/3397271.3401430}{FashionBERT}
+%     \item \href{https://dl.acm.org/doi/pdf/10.1145/3397271.3401265?casa_token=W8NqNWp0UQkAAAAA:w-iRUnNhmytDKCUiYzaUPG0bI_yyo8Bzxwro_eOC-zl5VDIGRVT2dvixvnCwLJ0iEKqYo1LkQIWXVA}{CrossBERT}
+    
+% \end{enumerate}
+
+
+% %% The acknowledgments section is defined using the "acks" environment
+% %% (and NOT an unnumbered section). This ensures the proper
+% %% identification of the section in the article metadata, and the
+% %% consistent spelling of the heading.
+\begin{acks}
+To Robert, for the bagels and explaining CMYK and color spaces.
+\end{acks}
+% \section*{Acknowledgments}
+
+
+
+\clearpage
+\clearpage
+% %%
+% %% The next two lines define the bibliography style to be used, and
+% %% the bibliography file.
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{ref}
+
+% %%
+% %% If your work has an appendix, this is the place to put it.
+\appendix
+\label{sec:appendix}
+
+
+\end{document}
+
