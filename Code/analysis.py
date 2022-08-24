@@ -80,6 +80,36 @@ for method in experiments.keys():
     for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']:
         print(f'method: {method}, best {metr} ** avg:', results[method]['avg']['best']['test'][metr], f'std:', results[method]['std']['best']['test'][metr])
 
+# Save results as csv and then convert it easily to latex table with best performances bolded.
+path = 'result-analysis/'
+metrics = ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']
+# col = ['Method'] + [metr.replace('_','.') for metr in metrics] # underline _ mess with latex.
+metrics_mrr = ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']
+metrics_acc = ['acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']
+col = ['Method'] + [metr.replace('_','.').replace('l', 't').replace('a', 's') for metr in metrics_mrr] # underline _ mess with latex, (l)anguage --> (t)ext, and (a)udio --> (s)peech
+result_mrr = pd.DataFrame(columns=col)
+col = ['Method'] + [metr.replace('_','.').replace('l', 't').replace('acc', 'cc').replace('a', 's').replace('cc', 'acc') for metr in metrics_acc] # underline _ mess with latex.
+result_acc = pd.DataFrame(columns=col) 
+best_bold = {}
+for metr in metrics:
+    idx = np.argmax([round(results[method]['avg']['best']['test'][metr]*100, 2) for method in results.keys()])
+    best_bold[metr] = list(results.keys())[idx]
+
+for idx, method in enumerate(list(results.keys())):
+    result_mrr.at[idx, 'Method'] = method
+    result_acc.at[idx, 'Method'] = method
+    for metr in metrics_mrr:
+        if method == best_bold[metr]:
+            result_mrr.at[idx, metr.replace('_','.').replace('l', 't').replace('a', 's')] = f"\\textbf{{{round(results[method]['avg']['best']['test'][metr]*100, 2)}}}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+        else:
+            result_mrr.at[idx, metr.replace('_','.').replace('l', 't').replace('a', 's')] = f"{round(results[method]['avg']['best']['test'][metr]*100, 2)}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+    for metr in metrics_acc:
+        if method == best_bold[metr]:
+            result_acc.at[idx, metr.replace('_','.').replace('l', 't').replace('acc', 'cc').replace('a', 's').replace('cc', 'acc')] = f"\\textbf{{{round(results[method]['avg']['best']['test'][metr]*100, 2)}}}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+        else:
+            result_acc.at[idx, metr.replace('_','.').replace('l', 't').replace('acc', 'cc').replace('a', 's').replace('cc', 'acc')] = f"{round(results[method]['avg']['best']['test'][metr]*100, 2)}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+result_mrr.to_csv(path_or_buf=path+'resultsMRR.csv', index=False)
+result_acc.to_csv(path_or_buf=path+'resultsACC.csv', index=False)
 
 
 markers = ['P', '^', 's', 'o','v','<','>','8', 'p','*','h','H','D','d','X']
@@ -121,7 +151,9 @@ for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_
     plt.grid(True)
     plt.xlabel('Epoch', fontsize=40)
     plt.ylabel(metric_correct_names[metr], fontsize=40)
-    plt.xticks(np.arange(0, len(list(results[method]['avg'].keys()))+1, 10), fontsize=30, rotation=90)
+    plt.xscale("symlog", base=2)
+    plt.xticks(fontsize=30)
+    # plt.xticks([1, 5, 10, 50, 80, 100, 150, 190], fontsize=30)
     plt.yticks(fontsize=30)
     plt.legend(loc='lower right', fontsize=40, ncol=1)
     # fig.legend(loc='lower right', fontsize=40, ncol=1)
