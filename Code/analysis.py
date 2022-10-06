@@ -86,9 +86,9 @@ metrics = ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ar
 # col = ['Method'] + [metr.replace('_','.') for metr in metrics] # underline _ mess with latex.
 metrics_mrr = ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']
 metrics_acc = ['acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']
-col = ['Method'] + [metr.replace('_','.').replace('l', 't').replace('a', 's') for metr in metrics_mrr] # underline _ mess with latex, (l)anguage --> (t)ext, and (a)udio --> (s)peech
+col = ['Method'] + metrics_mrr 
 result_mrr = pd.DataFrame(columns=col)
-col = ['Method'] + [metr.replace('_','.').replace('l', 't').replace('acc', 'cc').replace('a', 's').replace('cc', 'acc') for metr in metrics_acc] # underline _ mess with latex.
+col = ['Method'] + metrics_acc
 result_acc = pd.DataFrame(columns=col) 
 best_bold = {}
 for metr in metrics:
@@ -100,14 +100,31 @@ for idx, method in enumerate(list(results.keys())):
     result_acc.at[idx, 'Method'] = method
     for metr in metrics_mrr:
         if method == best_bold[metr]:
-            result_mrr.at[idx, metr.replace('_','.').replace('l', 't').replace('a', 's')] = f"\\textbf{{{round(results[method]['avg']['best']['test'][metr]*100, 2)}}}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+            result_mrr.at[idx, metr] = f"\\textbf{{{round(results[method]['avg']['best']['test'][metr]*100, 2)}}}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
         else:
-            result_mrr.at[idx, metr.replace('_','.').replace('l', 't').replace('a', 's')] = f"{round(results[method]['avg']['best']['test'][metr]*100, 2)}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+            result_mrr.at[idx, metr] = f"{round(results[method]['avg']['best']['test'][metr]*100, 2)}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
     for metr in metrics_acc:
         if method == best_bold[metr]:
-            result_acc.at[idx, metr.replace('_','.').replace('l', 't').replace('acc', 'cc').replace('a', 's').replace('cc', 'acc')] = f"\\textbf{{{round(results[method]['avg']['best']['test'][metr]*100, 2)}}}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+            result_acc.at[idx, metr] = f"\\textbf{{{round(results[method]['avg']['best']['test'][metr]*100, 2)}}}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
         else:
-            result_acc.at[idx, metr.replace('_','.').replace('l', 't').replace('acc', 'cc').replace('a', 's').replace('cc', 'acc')] = f"{round(results[method]['avg']['best']['test'][metr]*100, 2)}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+            result_acc.at[idx, metr] = f"{round(results[method]['avg']['best']['test'][metr]*100, 2)}$\pm${round(results[method]['std']['best']['test'][metr]*100, 2)}"
+
+# underline _ mess with latex, (l)anguage --> (t)ext, and (a)udio --> (s)peech
+columns_spell_out = {
+    'lrd': 'text/RGB/\\\Depth',
+    'ard': 'speech/RGB/\\\depth',
+    'lar': 'text/speech/\\\RGB',
+    'lad': 'text/speech/\\\depth',
+    'lard': 'all',
+    'lr': 'text/RGB',
+    'ld': 'text/depth',
+    'ar': 'speech/RGB',
+    'ad': 'speech/depth',
+}
+# result_mrr.columns = ['Method'] + [f"{metr.split('_')[0].upper()} {metr.split('_')[1].replace('l', 't').replace('a', 's')}" for metr in metrics_mrr]
+# result_acc.columns = ['Method'] + [f"{metr.split('_')[0].capitalize()} {metr.split('_')[1].replace('l', 't').replace('a', 's')}" for metr in metrics_acc]
+result_mrr.columns = ['Method'] + [columns_spell_out[metr.split('_')[1]] for metr in metrics_mrr]
+result_acc.columns = ['Method'] + [columns_spell_out[metr.split('_')[1]] for metr in metrics_acc]
 result_mrr.to_csv(path_or_buf=path+'resultsMRR.csv', index=False)
 result_acc.to_csv(path_or_buf=path+'resultsACC.csv', index=False)
 
@@ -122,25 +139,36 @@ styles_markers = ['-o', ':+', '-.^', '--s', '-.o', '-+', '--+', '-.+', ':o', '-v
 name = 'epochs'
 portion = 'test'
 metric_correct_names = {
-    'mrr_lrd': 'mrr.trd',
-    'mrr_ard': 'mrr.srd',
-    'mrr_lar': 'mrr.tsr',
-    'mrr_lad': 'mrr.tsd',
-    'mrr_lard': 'mrr.tsrd',
-    'mrr_lr': 'mrr.tr',
-    'mrr_ld': 'mrr.td',
-    'mrr_ar': 'mrr.sr',
-    'mrr_ad': 'mrr.sd',
+    'mrr_lrd': 'MRR speech ablated (trd)',
+    'mrr_ard': 'MRR text ablated (srd)',
+    'mrr_lar': 'MRR depth ablated (tsr)',
+    'mrr_lad': 'MRR RGB ablated (tsd)',
+    'mrr_lard': 'MRR all modalities (tsrd)',
+    'mrr_lr': 'MRR speech and depth ablated (tr)',
+    'mrr_ld': 'MRR speech and RGB ablated (td)',
+    'mrr_ar': 'MRR text and depth ablated (sr)',
+    'mrr_ad': 'MRR text and RGB ablated  (sd)',
 }
+
+# Exponentially sampled epochs to show more points in the first half
+# epochs = list(results['EMMA']['avg'].keys())
+# epochs.remove('best')
+# exp_sampled = np.random.exponential(scale=200, size=len(epochs))
+# unit_exp_prob = (exp_sampled + min(exp_sampled)) / sum(exp_sampled + min(exp_sampled))
+# epochs = list(np.random.choice(epochs, size=50, replace=False, p=unit_exp_prob))
+# epochs.sort(key = int)
+# print(epochs)
+
 for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
 # for metr in ['mrr_ard']:
     fig = plt.figure(figsize=(25,20))
     ax = fig.add_subplot(1,1,1)
     for method_idx, method in enumerate(results.keys()):
-        plt.plot([str(epoch) for epoch in results[method]['avg'].keys() if epoch != 'best'], [results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys() if epoch != 'best'], styles_markers[method_idx], label=method)
-        low = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys() if epoch != 'best']) - np.asarray([results[method]['std'][epoch][portion][metr] for epoch in results[method]['std'].keys() if epoch != 'best'])
-        high = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in results[method]['avg'].keys() if epoch != 'best']) + np.asarray([results[method]['std'][epoch][portion][metr] for epoch in results[method]['std'].keys() if epoch != 'best'])
-        plt.fill_between([str(epoch) for epoch in results[method]['std'].keys() if epoch != 'best'], low, high, alpha=0.2)
+        epochs = list(results[method]['avg'].keys())
+        plt.plot([str(epoch) for epoch in epochs if epoch != 'best'], [results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best'], styles_markers[method_idx], label=method, markersize=15)
+        low = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best']) - np.asarray([results[method]['std'][epoch][portion][metr] for epoch in epochs if epoch != 'best'])
+        high = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best']) + np.asarray([results[method]['std'][epoch][portion][metr] for epoch in epochs if epoch != 'best'])
+        plt.fill_between([str(epoch) for epoch in epochs if epoch != 'best'], low, high, alpha=0.2)
 
     # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
     # ax.grid(True)
@@ -158,3 +186,15 @@ for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_
     plt.legend(loc='lower right', fontsize=40, ncol=1)
     # fig.legend(loc='lower right', fontsize=40, ncol=1)
     plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+# Frank's request
+for method_idx, method in enumerate(results.keys()):
+    for seed in experiments[method].keys():
+        del results[method][seed]
+    for key in results[method].keys():
+        del results[method][key]['best']
+        for epoch in results[method][key].keys(): 
+            del results[method][key][epoch]['valid']
+json.dump(results, open('result-analysis/fig3-results.json', 'w'), indent=4)
+df = pd.read_json('result-analysis/fig3-results.json')
+df.to_csv('result-analysis/fig3-results.csv')

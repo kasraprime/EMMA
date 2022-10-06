@@ -1,4 +1,4 @@
-Method,mrr.sd,mrr.sr,mrr.td,mrr.tr,mrr.tsd,mrr.tsr,mrr.srd,mrr.trd,mrr.tsrd
+Method,speech/depth,speech/RGB,text/depth,text/RGB,text/speech/\\depth,text/speech/\\RGB,speech/RGB/\\depth,text/RGB/\\Depth,all
 Geometric,76.82$\pm$0.34,78.34$\pm$0.29,89.64$\pm$0.38,91.13$\pm$0.73,89.21$\pm$0.45,90.95$\pm$0.83,79.37$\pm$0.29,92.29$\pm$0.51,92.14$\pm$0.45
 SupCon,\textbf{78.18}$\pm$0.58,\textbf{79.69}$\pm$0.54,89.04$\pm$0.88,90.56$\pm$0.74,88.75$\pm$0.66,90.5$\pm$0.69,\textbf{81.2}$\pm$0.39,91.96$\pm$0.42,92.03$\pm$0.7
 EMMA,77.63$\pm$0.29,78.66$\pm$0.64,\textbf{89.87}$\pm$0.5,\textbf{91.26}$\pm$0.86,\textbf{89.66}$\pm$0.36,\textbf{90.97}$\pm$0.66,80.32$\pm$0.45,\textbf{92.71}$\pm$0.5,\textbf{92.72}$\pm$0.47
