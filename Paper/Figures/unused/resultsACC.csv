@@ -1,0 +1,5 @@
+Method,speech/depth,speech/RGB,text/depth,text/RGB,text/speech/depth,text/speech/RGB,speech/RGB/depth,text/RGB/Depth,all
+Geometric,61.95$\pm$0.55,64.34$\pm$0.53,82.03$\pm$0.57,84.6$\pm$1.1,81.08$\pm$0.81,84.0$\pm$1.4,65.84$\pm$0.63,86.41$\pm$0.83,85.94$\pm$0.74
+SupCon,\textbf{64.17}$\pm$0.92,\textbf{66.52}$\pm$1.07,81.05$\pm$1.22,83.65$\pm$1.4,80.58$\pm$1.12,83.54$\pm$1.23,\textbf{68.7}$\pm$0.66,86.06$\pm$1.21,85.82$\pm$1.29
+EMMA,63.54$\pm$0.53,65.07$\pm$1.01,82.78$\pm$0.97,\textbf{85.07}$\pm$1.42,\textbf{82.16}$\pm$0.64,\textbf{84.37}$\pm$1.23,67.69$\pm$0.81,\textbf{87.38}$\pm$0.71,\textbf{87.15}$\pm$0.72
+Contrastive,54.82$\pm$1.4,57.27$\pm$0.64,\textbf{82.88}$\pm$0.88,84.35$\pm$1.01,81.55$\pm$0.93,83.26$\pm$1.02,59.38$\pm$0.6,86.31$\pm$0.67,85.75$\pm$0.87

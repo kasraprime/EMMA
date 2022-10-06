@@ -1,10 +1,11 @@
 
 \documentclass[10pt]{article} % For LaTeX2e
 \usepackage{tmlr}
+%%\usepackage{showframe}
 % If accepted, instead use the following line for the camera-ready submission:
-%\usepackage[accepted]{tmlr}
+% \usepackage[accepted]{tmlr}
 % To de-anonymize and remove mentions to TMLR (for example for posting to preprint servers), instead use the following:
-%\usepackage[preprint]{tmlr}
+% \usepackage[preprint]{tmlr}
 
 % Optional math commands from https://github.com/goodfeli/dlbook_notation.
 \input{math_commands.tex}
@@ -15,7 +16,11 @@
 % My Packages
 \usepackage{cleveref}
 \usepackage{comment}
-\usepackage{todonotes}
+\usepackage{csvsimple}
+\usepackage{datatool}
+\usepackage{todonotes}[disable]
+\usepackage{graphicx}
+\usepackage{subcaption}
 \newcommand{\todokdinline}[1]{\todo[color=red!20,inline]{{KD: \small #1}}}
 \newcommand{\todokd}[1]{\todo[color=red!20]{{\small #1 -- Kasra}}}
 % \newcommand{\todocainline}[1]{\todo[color=yellow!20,inline]{{CA: \small #1}}}
@@ -41,22 +46,26 @@
 % https://www.overleaf.com/3575751412sjsdmszkxsyh
 %%%%%%%%%%%%%%%%%%%%
 
-\title{Multimodal Contrastive Learning for Object Retrieval in the Face of Modality Failures \\ Extended Multimodal Alignment \\ Combining Geometric and classification ... }
+\title{Multimodal Language Learning in the Face of Missing Modalities}
+% \\ Extended Multimodal Alignment \\ Combining Geometric and classification ... }
 
 % Authors must not appear in the submitted version. They should be hidden
 % as long as the tmlr package is used without the [accepted] or [preprint] options.
 % Non-anonymous submissions will be rejected without review.
 
-\author{\name Kyunghyun Cho \email kyunghyun.cho@nyu.edu \\
+\author{\name Kasra Darvish \email kasradarvish@umbc.edu \\
       \addr Department of Computer Science\\
-      University of New York
+      University of Maryland Baltimore County
       \AND
-      \name Raia Hadsell \email raia@google.com \\
-      \addr DeepMind
+      \name Edward Raff \email Raff\_Edward@bah.com \\
+      \addr University of Maryland Baltimore County \\
+      Booz Allen Hamilton
       \AND
-      \name Hugo Larochelle \email hugolarochelle@google.com\\
-      \addr Mila, Universit\'e de Montr\'eal \\
-      Google Research\\
+      \name Francis Ferraro \email ferraro@umbc.edu \\
+      \addr University of Maryland Baltimore County
+      \AND
+      \name Cynthia Matuszek \email cmat@umbc.edu\\
+      \addr University of Maryland Baltimore County \\
       CIFAR Fellow}
 
 % The \author macro works with any number of authors. Use \AND 
@@ -82,21 +91,9 @@
 
     % shorter version
     
-    We propose a generalized geometric combined with cross-entropy loss function that can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data, and compounded by the challenge of retrieval when a modality becomes unavailable. 
-    \todoff{this red text can (should) be shortened}
-    \todokd{I shortened it. Please remove both notes if it's resolved}
-    {\color{red}Our study is motivated by needs in robotics and computer-human interaction, where an agent has many sensors and thus modalities in which a human may interact both to communicate a desired goal and for the agent to recognize a desired target object.
-    Tying these various modalities together relates to the task of grounded language understanding. However, there has been little research on integrating more than two modalities.
-    % \todokdinline{Duplicate, it's already mentioned in intro}in which natural language is used as a query against objects in a physical environment, allowing a real-world, intuitive mechanism by which users can instruct physical agents to engage in tasks such as object retrieval.
-    % However, current work has neglected the real-world constraint that sensors fail. For practical applications,
-    %  we need mechanisms for accurate object retrieval given that a modality may fail without notice.
-    }
-    % \todoff{There's very little in here about actual method or conclusions}
-    There has been widely popular works on self-supervised contrastive learning based on cross-entropy, but there is an entire other approach based on explicit geometric alignment. However, there has been no work on combining the two approaches for multimodal learning to the best of our knowledge. We propose to combine the two approaches and argue that the two are complementary.
-    We demonstrate the usability of our model on a grounded language object retrieval scenario, where an intelligent agent has to select an object given an unconstrained language command. 
-    We leverage four modalities including vision, depth sensing, text, and speech, and we show that our model can outperform state-of-the-art contrastive learning models by $2\%$ while converging/learning/training $5$ times faster (takes $80\%$ less time or is $20\%$ of the baseline).
+    We propose \textit{extended multimodal alignment (EMMA)}, a generalized geometric method combined with a cross-entropy loss function that can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data, compounded by the challenge of retrieval when a modality becomes unavailable. Our study is motivated by needs in robotics and computer-human interaction, where an agent has many sensors and thus modalities with which a human may interact, both to communicate a desired goal and for the agent to recognize a desired target object. For such problems, there has been little research on integrating more than two modalities. While there have been widely popular works on self-supervised contrastive learning based on cross-entropy, there is an entirely separate family of approaches based on explicit geometric alignment. However, to the best of our knowledge there has been no work on combining the two approaches for multimodal learning. We propose to combine both families of approaches and argue that the two are complementary. We demonstrate the usability of our model on a grounded language object retrieval scenario, where an intelligent agent has to select an object given an unconstrained language command. We leverage four modalities including vision, depth sensing, text, and speech, and we show that our model converges approximately 5 times faster than previous strong baselines, and out-performs or is strongly competitive with state-of-the-art contrastive learning. % (in 80\% less time).
     %when modalities are ablated. 
-    The code will be publicly available on GitHub and will be included for the camera-ready version (it is redacted for anonymity). 
+    The code is publicly available on GitHub and will be included for the camera-ready version (it is redacted for anonymity). 
 \end{abstract}
 
 
@@ -104,35 +101,32 @@
 \section{Introduction}
 \label{intro}
 
-\todoffinline{nix this first sentence and revise the start of the second. We're not doing any cogsci-y stuff, or even human studies tied to modality deprivation. You could take most of the red text in the abstract I mentioned should be compressed and rework it here}
-\todokdinline{I took a shot at nixing it. Please remove both notes if it's resolved. I don't get the vibe of cogsci-y stuff or human studies from the first paragraph, would you please refer to those sentences?}
-Humans successfully use multiple sensory inputs to understand, interact with, and retrieve information from the world around them. Inspired by the multimodal nature of human interactions with the world, it is intuitive that agents learning about the world, upon encountering new concepts and new objects, should form a model that incorporates information from all available sensors and data sources. Benefits of integrating multiple modalities is twofold; first, additional modalities can help in the cases when other modalities fail, and second, complementary information can be extracted from different modalities that can help with understanding the world.
+Inspired by the multimodal nature of human interaction with the world, it is intuitive that agents learning about the world, upon encountering new concepts and new objects, should form a model that incorporates information from all available sensors and data sources. The benefits of integrating multiple modalities are twofold; first, complementary information can be extracted from different modalities that can help with understanding the world, and second, additional modalities can help in the cases when one or more sources of data about the world become unavailable.
 % 
-Grounded language understanding, in which natural language is used as a query against objects in a physical environment, allows a real-world, intuitive mechanism by which users can instruct physical agents to engage in tasks such as object retrieval. Visuolinguistic approaches to such object inference tasks typically involve training on large pools of image/text pairs and then using language to subselect elements of the sensed environment~\cite{hong2021gilbert,Zhuge_2021_CVPR_VLP}.
-\todoffinline{Unless Hong et al is a review paper, add at least one more citation}
-\todokdinline{I believe this sentence was added to cite some relevant work from SIGIR, so we can remove it. However, I added one more citation anyway.}
+Grounded language understanding, in which natural language is used as a query against objects in a physical environment, allows a real-world, intuitive mechanism by which users can instruct physical agents to engage in tasks such as object retrieval. Visuolinguistic approaches to such object inference tasks typically involve training on large pools of image/text pairs and then using language to subselect elements of the sensed environment~\citep{hong2021gilbert,Zhuge_2021_CVPR_VLP}.
+
 Although physical agents such as robots typically have access to sensory and interactive modalities beyond vision, and learning from multiple modalities can improve performance on downstream tasks, most approaches use at most two sensory inputs (e.g., visual data such as RGB plus depth images) with single labels, such as those provided by textual natural language. Simultaneously using additional inputs from different modalities is an underexplored area, in part due to the domain-specific nature of such \textit{n}-ary learning approaches. With the modern proliferation of audio and text based communication and home agents (e.g., Alexa/Google Home), there is a growing need to handle more modalities, and simultaneously their potential failures. 
 
-One difficulty with working with complex multimodal data is the increased likelihood that one or more modalities may have missing information; hardware can become damaged or shipped with defects, sensors can get blocked or obstructed, and various adverse but not uncommon conditions that remove a modality from use.
+One difficulty with working with complex multimodal data is the increased likelihood that one or more modalities may have missing information. Hardware can become damaged or defective, sensors can get blocked or obstructed, and various adverse but not uncommon conditions can remove a modality from use.
 Current multimodal approaches are typically not robust to the loss of one or more modalities at test time, as may happen if, for example, a physical agent fails to retrieve data from a particular sensor. In order to fully leverage multimodal training data while being robust to missing information, we propose a generalized distance-based loss function that can be extended to learn retrieval models that incorporate an arbitrary number of modalities.
 
-We consider the domain of grounded language-based object retrieval~\cite{hu2016natural, triplet_loss_2021_CVPR}, in which objects in an environment must be identified based on linguistic instructions. This can be considered a special case of image retrieval~\cite{huang2017deep, ma2020large, novak2015large, vo2019composing} in which objects are identified using visual inputs in combination with other sensor modalities. Approaches to acquiring grounded language have explored various combinations of sensor inputs such as depth and RGB with labels provided by textual language or  speech~\cite{RichardsDarvishMatuszekCategoryFree20}. 
+We consider the domain of grounded language-based object retrieval~\citep{hu2016natural, triplet_loss_2021_CVPR}, in which objects in an environment must be identified based on linguistic instructions. This can be considered a special case of image retrieval~\citep{huang2017deep, ma2020large, novak2015large, vo2019composing} in which objects are identified using visual inputs in combination with other sensor modalities. Approaches to acquiring grounded language have explored various combinations of sensor inputs such as depth and RGB with labels provided by textual language or  speech~\citep{RichardsDarvishMatuszekCategoryFree20}. 
 However, despite the multisensory nature of object retrieval, much of the existing work has not previously been extended to include an arbitrary number of modalities. 
 
-\todoff{revise this goal. It sets up the reviewers to take the easy way out and say results are too incremental}
-The high-level goal of this work is to take arbitrary input modalities about novel objects, including both spoken and written language, and build a model that allows a system to correctly retrieve that object given a subset of those input modalities. This is a generalization of approaches to grounded language learning in which specific input modalities are labeled with language to allow for future identification, but explicitly seeks to be agnostic about the nature of the individual sensory and linguistic inputs. Our contributions are as follows:
+% \todo[inline]{Whats the name of our method? When I skim the paper its hard to tell what ``the new thing is'', and then I have to read. I think being explicit here, with something like ``\textit{we propose our new method BLA}'' will help -Ed}
+
+The ultimate aim of this work is to take arbitrary input modalities about novel objects, including both spoken and written language, and build a model that allows a system to correctly retrieve that object given a subset of those input modalities. In this work, we propose our new method \ours{}, a generalized geometric method combined with a cross-entropy loss function that can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data. We demonstrate steps towards this ultimate goal with a mechanism that learns quickly from a variety of input signals and is robust to ablation of certain inputs. This is a generalization of approaches to grounded language learning in which specific input modalities are labeled with language to allow for future identification, but explicitly seeks to be agnostic about the nature of the individual sensory and linguistic inputs. 
+
+Our contributions are as follows:
 \begin{enumerate}
-    \item Proposing a new approach to multimodal learning by combining geometric and cross-entropy based methods and showing that it outperforms and converges faster compared to each method separately.
+    \item Proposing a new approach to multimodal learning by combining geometric and cross-entropy methods and showing that it outperforms and converges faster compared to each method separately.
     % \item Outperforming state-of-the-art models for grounded language learning by differentiating visual input modalities such as RGB and depth, rather than combining them into a single modality.
     
-    \item Our method can be easily extended to an arbitrary number of modalities.\todoffinline{potential counter: isn't the method quadratic?}
-    \todokdinline{Yes, but nonetheless it can be extended.}
-    
-    \item Outperforming state-of-the-art contrastive learning~\cite{chen2020simple} and supervised contrastive learning~\cite{NEURIPS2020_supervised_contrastive} models by $2\%$ when all modalities are available, and achieving the peak performance $5$ times faster than both methods. 
-    % Ours takes 8 epochs, baselines take 40 epochs.
-    \todokdinline{Should we break this contribution into two contributions, one for faster learning and the other for performance compared to both supcon and vanilla contrastive learning?}
-    
-    \item Demonstrating robustness in the face of missing information, when one or more modalities are ablated at test time.
+    \item Our method is designed to be applicable to additional modalities as they become available.
+
+    \item Our method converges approximately 5 times faster than previous strong baselines, and out-performs or is strongly competitive with state-of-the-art contrastive learning~\citep{chen2020simple} and supervised contrastive learning~\citep{NEURIPS2020_supervised_contrastive} models when all modalities are available.
+
+    \item Demonstrating robustness in the face of missing input signals when one or more modalities are ablated at test time, and proposing a simple averaging method to quantify performance for multimodal object retrieval scenarios.
     
     \item Demonstrating the separate utility of speech and text as sources of label information by treating them as sensory input modalities, rather than explicitly as labels.
     
@@ -151,36 +145,41 @@ The high-level goal of this work is to take arbitrary input modalities about nov
 \section{Related Work}
 \label{sec:Related-Work}
 
-\todoffinline{use paragraphs to add some light structure to this block-o-text}
+% \todoffinline{I'm not convinced this section shouldn't appear toward the end of the paper. Maybe adding that narrative structure will help?}
 
-\todoffinline{I'm not convinced this section shouldn't appear toward the end of the paper. Maybe adding that narrative structure will help?}
+% \todocmi{I'm not sure what narrative structure is being referred to here. I have a preference for having related work sections towards the beginning.}
 
-There is extensive work on the task of image retrieval, of which physical object retrieval can be considered a special case. In this task, language is used to formulate queries against datasets of images, for example in text-and-image matching tasks for fashion data~\cite{gao2020fashionbert, wen2021comprehensive}, sketch retrieval~\cite{huang2017deep}, and general photographs of objects~\cite{ma2020large, novak2015large, hong2021gilbert}. Prior work has focused solely on language and visual modalities, using text or a combination of language and vision to perform visual retrieval~\cite{vo2019composing}. While recent works have focused on grounding with respect to a knowledge set \cite{10.1145/3357384.3357889,10.1145/3397271.3401097}, our work focuses on robust multimodal learning to perform grounding over an arbitrary number of input modalities. 
+There is extensive work on the task of image retrieval, of which physical object retrieval can be considered a special case. In this task, language is used to formulate queries against datasets of images, for example in text-and-image matching tasks for fashion data~\citep{gao2020fashionbert, wen2021comprehensive}, sketch retrieval~\citep{huang2017deep}, and general photographs of objects~\citep{ma2020large, novak2015large, hong2021gilbert}. Prior work has focused solely on language and visual modalities, using text or a combination of language and vision to perform visual retrieval~\citep{vo2019composing}. While recent works have focused on grounding with respect to a knowledge set \citep{10.1145/3357384.3357889,10.1145/3397271.3401097}, our work focuses on robust multimodal learning to perform grounding over an arbitrary number of input modalities. 
 
-The growing number of datasets that contain modalities beyond images and text demonstrates the importance and the challenge of this task. \citet{bagher-zadeh-etal-2018-multimodal} introduce a large dataset of multimodal opinion sentiment and emotion intensity (CMU-MOSEI) for sentiment analysis and emotion recognition. They also introduce a novel multimodal fusion technique called the Dynamic Fusion Graph (DFG).~\citet{GoLD_UMBC} present a multimodal dataset of household objects containing RGB images, depth images, written language, and spoken language, which has been used to support learning grounded language directly from speech given small datasets~\cite{KebeAAAI2022}. 
+The growing number of datasets that contain modalities beyond images and text demonstrates the importance and the challenge of this task. \citet{bagher-zadeh-etal-2018-multimodal} introduce a large dataset of multimodal opinion sentiment and emotion intensity (CMU-MOSEI) for sentiment analysis and emotion recognition. They also introduce a novel multimodal fusion technique called the Dynamic Fusion Graph (DFG).~\citet{GoLD_UMBC} present a multimodal dataset of household objects containing RGB images, depth images, written language, and spoken language, which has been used to support learning grounded language directly from speech given small datasets~\citep{KebeAAAI2022}. 
 \citet{baltrusaitisMultimodalMachineLearning2019} propose a new taxonomy of multimodal machine learning by introducing five technical challenges in addition to typical early and late fusion categorization. They cover different approaches to multimodal machine learning such as \textit{representation}, \textit{translation}, \textit{alignment}, \textit{fusion}, and \textit{co-learning}. In this work, we focus on alignment, the process of identifying the direct relationship between elements across modalities.
 
-We highlight a key difference with recent work like \citet{10.1145/3397271.3401232} and \citet{10.1145/3331184.3331213} who develop multi-modal retrieval models. These retrieval models are class based, where the model is trained to recognize any object of the same retrieval class as being ``same''. Our method and data is instance based, where different objects are not considered ``same'' even if they have the same class, due to the grounding goals of our work (i.e., the agent should identify the specified object, not equivalent objects). These works also do not consider the failure of a modality that is our target of interest. 
+We highlight a key difference with recent work like \citet{10.1145/3397271.3401232} and \citet{10.1145/3331184.3331213} who develop multi-modal retrieval models. These retrieval models are class based, where the model is trained to recognize any object of the same retrieval class as being the `same.' Our method and data is instance based, where different objects are not considered the same even if they have the same class, due to the grounding goals of our work (i.e., the agent should identify the specified object, not equivalent objects). These works also do not consider performance in the case of failure of an input modality. 
 
-A number of different approaches have been proposed for linguistic-based alignment learning. \citet{alayrac2020self} use a self-supervised contrastive learning method to learn and combine representations from three modalities of visual, audio, and language. Audio and visual domains are mapped to the same space because they are fine-grained, containing dense information for each frame of video. These embeddings are then mapped to a coarse space where text is also mapped. Their network respects specificity and comparability of different modalities. The loss function they define consists of two distance-based terms for the corresponding spaces, differing from ours in that they do not handle arbitrarily many modalities and do not focus on robustness in the face of modality drop-outs. \citet{Nguyen-RSS-20} take a similar approach and perform pairwise cosine similarity to align images and natural language text descriptions to perform object retrieval tasks. \citet{triplet_loss_2021_CVPR} take a cross-modal manifold alignment approach to grounded language learning using triplet loss \cite{Chechik:2010:LSO:1756006.1756042}, and perform object retrieval by connecting text descriptions of objects to their corresponding RGB-D images.
+A number of different approaches have been proposed for linguistic-based alignment learning. \citet{alayrac2020self} use a self-supervised contrastive learning method to learn and combine representations from three modalities of visual, audio, and language. Audio and visual domains are mapped to the same space because they are fine-grained, containing dense information for each frame of video, and these embeddings are then mapped to a coarse space where text is also mapped. Their network respects specificity and comparability of different modalities. The loss function they define consists of two distance-based terms for the corresponding spaces, differing from ours in that they do not handle arbitrarily many modalities and do not focus on robustness in the face of modality drop-outs. \citet{Nguyen-RSS-20} take a similar approach and perform pairwise cosine similarity to align images and natural language text descriptions to perform object retrieval tasks. \citet{triplet_loss_2021_CVPR} take a cross-modal manifold alignment approach to grounded language learning using triplet loss \citep{Chechik:2010:LSO:1756006.1756042}, and perform object retrieval by connecting text descriptions of objects to their corresponding RGB-D images.
 
-In general there are two different family of approaches to multimodal learning in the literature. One family is based on classification and cross-entropy losses such as~\citet{NEURIPS2020_supervised_contrastive, chen2020simple} and the other family is geometric based such as~\citet{ICML22GeometricMultimodal,Carvalho-cooking-triplet,salvador2017cooking,triplet_loss_2021_CVPR}.
-In this paper we propose to marry the two families and show that combining geometric approach with cross-entropy method is superior. \todokdinline{Pun intended :-)}
-\todokdinline{Should we move the following two paragraphs to the Approach section?}
-For the classification part of our loss function we employ the supervised contrastive loss proposed by~\citet{NEURIPS2020_supervised_contrastive}. The way we formulate our geometric part of the loss function is similar to lifted structured loss~\cite{songCVPR16LiftedStructured}, where they take a geometric approach in a unimodal scenario and consider pairwise distances among all items in a batch, but in this paper we apply our idea to four modalities, and our formulation can be extended to any number of modalities.
+In general there are two different families of approaches to multimodal learning in the literature. One family is based on classification and cross-entropy losses such as~\citet{NEURIPS2020_supervised_contrastive, chen2020simple} and the other family is geometric based such as~\citet{ICML22GeometricMultimodal,Carvalho-cooking-triplet,salvador2017cooking,triplet_loss_2021_CVPR}.
+In this paper we propose to marry the two families and show that combining geometric approach with cross-entropy method is superior.
+
+% \todokdinline{Should we move the following two paragraphs to the Approach section?}
+% \todocmi{Actually yes, although I think it's more like 3 paragraphs. Rewriting the subsequent paragraphs so they don't appear out of nowhere would help.}
+% \todokdinline{After moving baselines to the approach section and rewriting it, I think it's better if we leave these here. Let me know if you think otherwise.}
+
+% For the classification part of our loss function we employ the supervised contrastive loss proposed by~\citet{NEURIPS2020_supervised_contrastive}. 
+The way we formulate our geometric loss function is similar to lifted structured loss~\citep{songCVPR16LiftedStructured}, where they take a geometric approach in a unimodal scenario and consider pairwise distances among all items in a batch, but in this paper we apply our idea to four modalities, and our formulation can be extended to any number of modalities.
 This extended geometric formulation results in a loss function that is similar to \citet{ICML22GeometricMultimodal} where they propose a geometric contrastive learning approach in which they %use the same instance of an MLP network (same weights) after extracting embeddings from each modality, while we use different instances of the same MLP network (different weights). They also 
 fuse all embeddings as a central embedding and then minimize the distance between each embedding and that central embedding. However, their method does not take into account any notion of classification.
 
-The geometric approach is also known as contrastive learning~\cite{qin2021world}, which is based on the idea of similarity and distance of elements of training data~\cite{Carvalho-cooking-triplet,triplet_loss_2021_CVPR,salvador2017cooking}. Triplet loss is also a special case of contrastive loss~\cite{NEURIPS2020_supervised_contrastive}. Contrastive loss is mostly used in self-supervised learning~\cite{bui2021self, alayrac2020self,chen2020simple}, with some exceptions such as \citet{NEURIPS2020_supervised_contrastive}, who use contrastive loss for a supervised problem. Most of these methods are implemented for a non-multimodal dataset (e.g., RGB images only). Our work is a specialization of contrastive loss that is focused on the multimodal input and- language problem.
+The geometric approach is also known as contrastive learning~\citep{qin2021world}, which is based on the idea of similarity and distance of elements of training data~\citep{Carvalho-cooking-triplet,triplet_loss_2021_CVPR,salvador2017cooking}. Triplet loss is also a special case of contrastive loss~\citep{NEURIPS2020_supervised_contrastive}. Contrastive loss is mostly used in self-supervised learning~\citep{bui2021self, alayrac2020self,chen2020simple}, with some exceptions such as \citet{NEURIPS2020_supervised_contrastive}, who use contrastive loss for a supervised problem. Most of these methods are implemented for a non-multimodal dataset (e.g., RGB images only). Our work is a specialization of contrastive loss that is focused on the multimodal input and language problem.
 
-We note in particular that standard triplet learning approaches often require an expensive \textit{mining} step to find harder negative samples to enable effective learning \cite{Hoffer2015,Schroff2015,DBLP:conf/eccv/2018-9,DBLP:conf/eccv/ZhaoJQLH18,Zhai2018}. This is problematic from throughput and scalability, as run time becomes quadratic in batch size. Our approach does not require mining to obtain good performance, alleviating these issues along with their complicated history in reproducibility and parameter tuning \cite{Musgrave2020,Raff2020c,Raff2019_quantify_repro}. 
+We note in particular that standard triplet learning approaches often require an expensive \textit{mining} step to find harder negative samples to enable effective learning \citep{Hoffer2015,Schroff2015,DBLP:conf/eccv/2018-9,DBLP:conf/eccv/ZhaoJQLH18,Zhai2018}. This is problematic for throughput and scalability, as run time becomes quadratic in batch size. Our approach does not require mining to obtain good performance, alleviating these issues along with their complicated history in reproducibility and parameter tuning \citep{Musgrave2020,Raff2020c,Raff2019_quantify_repro}. 
 
 Some of the most closely related work focuses on learning based on more than two input modalities. \citet{Veit_2018_CVPR} train a joint model of images, hashtags, and users to perform image retrieval. Their task is similar to ours---given a description, we want to find the image/object in the scene that best matches the description. They tackle this problem by forming a three-way tensor product model. They use a ranking loss to train the model where the score of an observed triplet is higher than an unobserved triplet. They sample six negative triplets per positive sample triplet, and use each of them as a negative in the loss. The downstream retrieval task is then simply done by taking the argmax of the tensor product for a given user. This work differs from ours in that it becomes computationally complex as more and higher-dimensional modalities are added.
-Our proposed geometric loss function resembles work on quadruplet loss~\cite{chen2017beyond,tursun2021efficient} but is intended to scale to an arbitrary number of modalities.
+Our proposed geometric loss function resembles work on quadruplet loss~\citep{chen2017beyond,tursun2021efficient} but is intended to scale to an arbitrary number of modalities.
 
-\citet{semihet_three_way_Lei_2020} use inputs from three modalities of image, sketch, and edgemap to perform image retrieval given the sketch. They use co-attention mechanism, and their loss function contains alignment loss, cross-entropy loss, and sketch-edgemap contrastive loss. \citet{Mittal2020M3ER} use Canonical Correlational Analysis (CCA) to differentiate between ineffective and effective modalities for the emotion recognition task from multiple input modalities including face, speech, and text. Multimodal learning has been used for different applications including but not limited to object retrieval. \citet{Deception_ICMI_2014} use language, physiological response, and thermal sensing to detect deceit. \citet{het_data_fusion_liu_IEEE_2017} take two modalities as input and output predictions in a third modality. \citet{tursun2021efficient} uses quadruplet loss for two modalities only; image and sketch. A quadruplet is composed of a sketch picture as an anchor, a negative example from sketch domain, a negative example from picture domain,  and a positive example from picture domain. \citet{chen2017beyond} also uses quadruplet loss, but does not support multiple domains. In contrast, our method is not restricted to two modalities.
+To the best of our knowledge, there has been limited work on incorporating more than three modalities into a general learning approach. \citet{semihet_three_way_Lei_2020} use inputs from three modalities of image, sketch, and edgemap to perform image retrieval given the sketch. They use a co-attention mechanism, and their loss function contains alignment loss, cross-entropy loss, and sketch-edgemap contrastive loss. \citet{Mittal2020M3ER} use Canonical Correlational Analysis (CCA) to differentiate between ineffective and effective modalities for the emotion recognition task from multiple input modalities including face, speech, and text. Multimodal learning has been used for different applications including but not limited to object retrieval. \citet{Deception_ICMI_2014} use language, physiological response, and thermal sensing to detect deceit. \citet{het_data_fusion_liu_IEEE_2017} take two modalities as input and output predictions in a third modality. \citet{tursun2021efficient} uses quadruplet loss for two modalities only; image and sketch. A quadruplet is composed of a sketch picture as an anchor, a negative example from sketch domain, a negative example from picture domain, and a positive example from picture domain. \citet{chen2017beyond} also uses quadruplet loss, but does not support multiple domains. In contrast, our method is not restricted to two modalities.
 % \todo[inline]{talk about CLIP and DALL-E here}
-To the best of our knowledge, there has been limited work on incorporating more than three modalities into a general learning approach. 
+ 
 
 
 %===================================================================
@@ -188,19 +187,21 @@ To the best of our knowledge, there has been limited work on incorporating more 
 \section{Problem Description}
 \label{sec:Problem-Description}
 
-Given a language command, for example either text or speech, that describes an object, we want our model to retrieve the correct object from a set of objects. This problem is an exemplar of tasks found in the area of grounded language learning in the fields of robotics and natural  language processing. Intuitively, the goal is to take unconstrained natural language queries and select the appropriate object based on the complete set of sensor inputs available to the agent. We demonstrate on a domain containing four modalities, all of which refer to objects in the environment: spoken language, written text, RGB (image) inputs, and depth camera inputs. \Cref{fig:experimental-setup} illustrates a small visualization of our object retrieval task: the spoken query ``A white textbook titled algorithms'' is provided to our contrastive model, which identifies the item (outlined in red, and represented by up to four different modalities) as the most likely item the query is referring to.
+Given a language command (either text or speech) that describes an object, we want our model to retrieve the correct object from a set of objects. This problem is an exemplar of tasks found in the area of grounded language learning in the fields of robotics and natural  language processing. Intuitively, the goal is to take unconstrained natural language queries and select the appropriate object based on the complete set of sensor inputs available to the agent. We demonstrate on a domain containing four modalities, all of which refer to objects in the environment: spoken language, written text, RGB (image) inputs, and depth camera inputs. \Cref{fig:experimental-setup} illustrates a small visualization of our object retrieval task: the spoken query ``A white textbook titled algorithms'' is provided to our contrastive model, which identifies the item 
+(outlined in red in \cref{fig:experimental-setup}) 
+as the most likely item the query is referring to.
 
 \begin{figure}[tb]
 \centering
-\includegraphics[width=.5\columnwidth]{Figures/experiment-setup.png}
+\includegraphics[width=.75\columnwidth]{Figures/experiment-setup-rearranged.png}
 \caption{
-The experimental object retrieval setup, in which objects are represented by four modalities: an RGB image, a depth image, spoken descriptions, and textual descriptions. Given a query in some modality, our approach seeks to select the object that is the best fit, per a trained model. This approach, detailed in \cref{sec:Method}, is able to rank objects as to appropriateness even when one or more modalities is ablated at test time (e.g., depth inputs are missing), and outperforms state-of-the-art contrastive learning approaches on this task.
+The experimental object retrieval setup, in which objects are represented by four modalities: an RGB image, a depth image, spoken descriptions, and textual descriptions. Given a query in some modality, our approach seeks to select the object that is the best fit, per a trained model. This approach, detailed in \cref{sec:Method}, is able to rank objects as to appropriateness even when one or more modalities is ablated at test time (e.g., depth inputs are missing), and outperforms state-of-the-art contrastive learning approaches.
 }
 \label{fig:experimental-setup}
 \end{figure}
 
-More formally, we consider a spoken language command $x_s$, a textual language command $x_t$, a set of RGB images $X_r = \{x_r^{(1..n)}\}$, and a set of depth images $X_d = \{x_d^{(1..n)}\}$, the task is to retrieve the correct object by choosing the index that has the minimum distance from either of the language commands across all modalities.
-Depending on which modalities are or are not ablated, we consider up-to four distances: ``sr,'' a vector of distances between $x_s$ and all RGB images in $X_r$; ``sd,'' a vector of distances between $x_s$ and all depth images in $X_d$; ``tr,'' a vector of distances between $x_t$ and all RGB images in $X_r$; and ``td,'' a vector of distances between $x_t$ and all depth images in $X_d$. In order to select the correct object, we first perform a component-wise average of the relevant modality pair distances for the available modalities. Then, we select the object which had the minimum distance, i.e., we perform an argmin on this average vector of multiple-modality distances. Depending on the missing/available sensors during test time, we might have any combination of these four distances. For example, if no written instructions are available at test time,\footnote{This setting is particularly salient. While large bodies of text are frequently available at training time, a person interacting directly with a physical agent may well prefer to use spoken instructions.} we compute the component-wise average of $sr$ and $sd$, and then select the object whose coordinate resulted in the lowest average distance. This method allows us to extend our model to support arbitrary modalities while remaining robust to test cases in which some modalities are missing or incomplete. 
+More formally, given a spoken language command $x_s$, a textual language command $x_t$, a set of RGB images $X_r = \{x_r^{(1..n)}\}$, and a set of depth images $X_d = \{x_d^{(1..n)}\}$, the task is to retrieve the correct object by choosing the index that has the minimum distance from either of the language commands across all modalities.
+Depending on which modalities are or are not ablated, we consider up to four distances: \textit{sr}, a vector of distances between $x_s$ and all RGB images in $X_r$; \textit{sd}, a vector of distances between $x_s$ and all depth images in $X_d$; \textit{tr}, a vector of distances between $x_t$ and all RGB images in $X_r$; and \textit{td}, a vector of distances between $x_t$ and all depth images in $X_d$. In order to select the correct object, we first perform a component-wise average of the relevant modality pair distances for the available modalities. Then, we select the object which had the minimum distance, i.e., we perform an argmin on this average vector of multiple-modality distances. Depending on the missing/available sensors during test time, we might have any combination of these four distances. For example, if no written instructions are available at test time,\footnote{This setting is particularly salient. While large bodies of text are frequently available at training time, a person interacting directly with a physical agent may well prefer to use only spoken instructions.} we compute the component-wise average of $sr$ and $sd$, and then select the object whose coordinate resulted in the lowest average distance. This method allows us to extend our model to support arbitrary modalities while remaining robust to test cases in which some modalities are missing or incomplete. 
 
 
 %===================================================================
@@ -208,25 +209,112 @@ Depending on which modalities are or are not ablated, we consider up-to four dis
 \section{Approach}
 \label{sec:Method}
 
-In keeping with previous work on the closely related problem of image retrieval, we focus on contrastive loss approaches, in which the goal is to learn an embedding of data where similar samples---in our case, samples belonging to the same class of object---are embedded `close' to one another, while dissimilar samples are farther apart. We develop a novel geometric loss function that simultaneously minimizes intra-class distances and maximizes inter-class distances across each pair of modalities yielding a model that is both effective at the retrieval task defined above and robust to modality dropouts at test time. We take an additional step and combine this geometric loss with a classification-based (cross-entropy) loss function which results in a superior model compared to either of geometric or cross-entropy losses alone.
+In keeping with previous work on the closely related problem of image retrieval, we focus on contrastive loss approaches, in which the goal is to learn an embedding of data where similar samples---in our case, samples belonging to the same class of object---are embedded `close' to one another, while dissimilar samples are farther apart. We develop a novel geometric loss function, \geom{}, that simultaneously minimizes intra-class distances and maximizes inter-class distances across each pair of modalities, yielding a model that is both effective at the retrieval task defined above and robust to modality dropouts at test time. We take an additional step and combine this \geom{} loss with a classification-based (cross-entropy) loss function which results in a superior model compared to either of geometric or cross-entropy losses alone; we refer to this combination as Extended Multi-Modal Alignment, or \ours{}.
 
-\subsection{Geometric Alignment Loss}
-\label{ssec:distanceloss}
+
+\subsection{Baselines}
+We compare both \ours{} and \geom{} against contrastive learning~\citep{chen2020simple} and supervised contrastive learning~\citep{NEURIPS2020_supervised_contrastive}, which for conciseness we refer to as \supcon{}.
+We consider \supcon{} as the main baseline since it is a general version of multiple contrastive loss functions including triplet loss, the traditional version of contrastive loss usually used in self-supervised settings~\citep{chen2020simple}, and N-pair loss~\citep{NIPS2016N-PairLoss}.
+% and do not include N-pair and triplet loss in our comparisons.
+%contrastive learning methods including triplet loss, the traditional version of contrastive loss usually used in self-supervised settings~\citep{chen2020simple}, and supervised contrastive learning~\citep{NEURIPS2020_supervised_contrastive}. 
+
+
+
+
+\begin{comment}
+\subsubsection{Triplet Loss}
+\label{sub:baseline-triplet}
+Triplet loss has two major disadvantages. First, it cannot be used for more than two modalities.
+Second, a batch size of greater than 1 is hard to implement if the anchor, positive, and negative come from different modalities for each batch.
+% To address these issues in EMMA, we sample more than one positive and negative data points.
+%Intuitively, we sample one positive data point and one negative data point, each of which includes $M$ modalities, resulting in 2M data points. Each of the $M$ positives modalities become an anchor once. 
+% \Cref{table:quantitative} shows that our MMA method perform as good as this baseline while our model can be trained 10x faster since we can use batch sizes larger than 1. Also, 
+
+% When we used a fixed anchor modality, a batch size of 64, and applied semantic negative sampling~\citep{Pillai_Matuszek_2018}, our method outperformed this baseline. However, 
+% Since this method cannot be applied to four modalities, we do not include it in the main analysis. 
+\end{comment}
+
+\subsubsection{Contrastive Loss}
+\label{sub:baseline-contrastive}
+
+
+We compare our model against the contrastive learning method presented by~\citet{chen2020simple} where they use the normalized
+temperature-scaled cross entropy loss (NT-Xent). In order to implement this loss function, we use cosine similarity as suggested in the SimCLR paper~\citep{chen2020simple}. Another possibility is to use an inner dot product~\citep{NEURIPS2020_supervised_contrastive}; if not normalized, this can lead to numerical instabilities and overflow/underflow since the dot product is not bounded, but the result is the same whether we use normalized inner dot product or cosine similarity. Contrastive loss function is formulated in \cref{eq:contrastive-loss}:
+% \todokdinline{try contrastive loss with cross-entropy, dot product, and the supervised contrastive method itself (without triplets).}
+
+% Original Formula
+\begin{equation}\label{eq:contrastive-loss}
+    -\sum_{i \in I} \log \frac{\exp (sim(z_i , z_{j(i)}) / \tau) }{\sum_{a \in A(i)} \exp (sim(z_i, z_a) / \tau)}
+\end{equation}
+% \begin{equation}\label{eq:contrastive-loss}
+%     -\sum_{i \in I} \log \frac{\exp (sim(f(x_i) , z_{j(i)}) / \tau) }{\sum_{a \in A(i)} \exp (sim(f(x_i), f(x_a)) / \tau)}
+% \end{equation}
+where $i$ is the index of anchor, $j(i)$ is the index of positive item with respect to the anchor $z_i$ and is not the same as anchor, $A(i)$ is the set of all negatives and the one positive indices excluding anchor, and $z = f(x)$.
+
+We can treat different modalities of the same instance as additional input for that instance that augment the available information, and consider them as the positive points for the anchor.
+\Cref{eq:contrastive-loss} can be rewritten with the sum over more than one positive item as formulated in \cref{eq:explicit-contrastive}:
+
+%, which is equivalent to ``augmented views'' in the contrastive loss terminology.
+
+% \todo[inline]{Here we use $\sum_{p=1}^{P(i)}$, but later use $\sum_{p \in P(i)}$, we should be consistent. IMO I'd go with the latter, as its more consisnt with all other equations and $\sum_{p=1}^{P(i)}$ is a littel unusual looking -Ed I corrected it. -Kasra}
+\begin{equation}\label{eq:explicit-contrastive}
+    - \sum_{i \in I} \sum_{p \in P(i)} \log \frac{\exp (sim(z_i , z_{p})/ \tau) }{
+    \sum_{a \in A(i)} \exp (sim(z_i, z_a) / \tau)}
+    %{ \exp (sim(z_i^+ , z_{m}^{+}) / \tau) + \exp (sim(z_i^+, z_{m}^{-}) / \tau)}
+\end{equation}
+where $I$ is a batch consisting of one or more instances each with a set of all its modalities, and $P(i)$ is the set of modalities/augmentations of the anchor $i$ excluding itself (e.g. RGB image, depth image, speech, text) and $z = f(x)$. Therefore, if we have 4 modalities and the batch size is 64, the size of $I$ is $256$, the size of $P(i)$ is $M-1 = 3$ where $M$ is the number of modalities, and the size of $A(i)$ is $256 - 1 = 255$.
+
+
+\subsubsection{Supervised Contrastive Learning}
+\label{sub:baseline-supcon}
+
+\citet{NEURIPS2020_supervised_contrastive} extend the contrastive learning method (NT-Xent) and propose a supervised way of performing contrastive learning to treat not only augmentations of the anchor, but also every item that shares the same label with anchor as positives. This loss function is shown in \cref{eq:supervised-contrastive}.
+
+\begin{equation}\label{eq:supervised-contrastive}
+    \sum_{i \in I} \frac{-1}{|P(i)|} \sum_{p \in P(i)} \log \frac{\exp (z_i \cdot z_p / \tau) }{\sum_{a \in A(i)} \exp (z_i \cdot z_a / \tau)}
+\end{equation}
+
+% \begin{equation}\label{eq:supervised-contrastive-my-notation}
+%     \sum_{i \in I} \frac{-1}{|P(i)|} \sum_{p \in P(i)} \log \frac{\exp (f_i(x_i) \cdot f_p(x_p) / \tau) }{\sum_{a \in A(i)} \exp (f_i(x_i) \cdot f_a(x_a) / \tau)}
+% \end{equation}
+
+Although this loss function does not use cosine similarity, embeddings are normalized before performing dot product, which is equivalent to cosine similarity.
+
+The main difference between the contrastive loss baseline in \cref{sub:baseline-contrastive} and \supcon{} is that there is no notion of meaningful negative points in contrastive loss, and everything in the batch that is not the anchor or one of the positive views is considered to be negative. In \supcon{}, however, all elements in the batch that have same label as the anchor are also considered positives, in addition to different views of the same instance. While the denominators of \cref{eq:explicit-contrastive,eq:supervised-contrastive} stay the same, this subtle difference affects the numerator and includes more positive examples, which prevents the unintended use of actual positives as negative examples.
+
+While this model is a strong baseline, the authors applied it to a unimodal dataset. In this paper we extend this baseline to work with a multimodal dataset and show that it is slower than \ours{} to learn and its performance is also lower when all modalities are available during test time.
+% if modalities are ablated, this method does not perform as well as our proposed model (we show and discuss this later, in \cref{fig:epochs-mrr.srd}). This is especially true when the text modality is dropped, as is likely in physical agent scenarios, where speech is a natural interaction mechanism.
+
+Since \supcon{} considers all pairwise distances in each batch, with $M$ modalities and a batch of size $B$ each batch contains $B$x$M$ items, and \supcon{} computation involves $(BM)^2$ pairwise distance terms which is dependent on batch size. However, the computations of our \geom{} approach is agnostic with respect to batch size which makes it scalable.
+
+\subsection{EMMA: Extended Multimodal Alignment}
+\label{sec:emma}
+
+Our proposed multimodal method is composed of two complementary parts. The first part is a geometric loss based on distances in the latent space, and the second part is a contrastive loss based on cross-entropy. The geometric loss is faster to learn while the cross-entropy method is more aligned with the downstream task of object retrieval. Hence we propose to combine them. 
+
+\paragraph{Geometric Alignment Loss}
+\label{subsec:geom-loss}
 
 % For $M$ modalities, we 
-We define a distance-based loss function which can be used for arbitrary number of modalities. Our proposed method is inspired by the well-known similarity-based triplet loss~\cite{Carvalho-cooking-triplet,triplet_loss_2021_CVPR}, and is similar to contrastive loss~\cite{chen2020simple,NEURIPS2020_supervised_contrastive} under some settings.
+We define a distance-based loss function which can be used for an arbitrary number of modalities. Our proposed method is inspired by the well-known similarity-based triplet loss~\citep{Carvalho-cooking-triplet,triplet_loss_2021_CVPR}, and is similar to contrastive loss~\citep{chen2020simple,NEURIPS2020_supervised_contrastive} under some settings.
 Triplet loss-based learning works by forcing similar concepts from different domains `together' in some shared embedding space, while forcing dissimilar concepts `apart.' It is so named because it relies on three data points from the training set: a positive, a negative, and an anchor point. 
-However, standard triplet loss cannot be used for more than two modalities. Therefore, we modify this concept as follows. During training, we sample two different instances and their corresponding representations from all modalities into two sets---one positive set (referring to a specific object) and one negative set (referring to some different object) as shown in \cref{fig:emma-loss}.
-Unlike some prior triplet loss methods~\cite{GoLD_UMBC,triplet_loss_2021_CVPR}, the anchor is not randomly chosen from different modalities in each batch. Instead, in our setting, every item in the positive set becomes anchor once, and we minimize the distance between that item and other items in the positive set, while minimizing the distance between that item and all items in the negative set. It can be seen as an one-to-many relationship instead of an one-to-two relationship in the triplet loss formulation.
+However, standard triplet loss cannot be used for more than two modalities.
+
+To address this issue, we use pairwise distance optimization for all data points. %
+Our method can be used for an arbitrary number of modalities. %
+In contrast to our work, previous works that use triplet loss~\citep{GoLD_UMBC,triplet_loss_2021_CVPR} concatenate RGB and depth to form a single ``vision'' vector to handle three modalities, so they cannot robustly handle RGB or depth sensor ablation during test.
+Moreover, our method has the advantage that it does not require providing hard negative examples.
+Therefore, we modify the concept of triplet loss as follows. During training, we sample two different instances and their corresponding representations from all modalities into two sets---one positive set (referring to a specific object) and one negative set (referring to some different object) as shown in \cref{fig:emma-loss-trimmed}.
+Unlike some prior triplet loss methods~\citep{GoLD_UMBC,triplet_loss_2021_CVPR}, the anchor is not randomly chosen from different modalities in each batch. Instead, in our setting, every item in the positive set becomes anchor once, and we minimize the distance between that item and other items in the positive set, while minimizing the distance between that item and all items in the negative set. It can be seen as an one-to-many relationship instead of an one-to-two relationship in the triplet loss formulation.
 % the anchor and positive items are from the same object class, but in different modalities and each of the positives modalities becomes anchor once. 
 We consider the following terminology:
 % \todokdinline{I feel like using the terminology of triplet loss especially \textbf{anchor} is confusing here or maybe it needs to be rephrased. We can alternatively say that we consider all pairwise distances.}
 % \todoffinline{I don't see the problem with anchor, but if you'd rather use a different term, what about query? As a note, while you do consider all pairwise distances but you treat some differently than others.}
 \begin{itemize}
     % \item data point: a row in the csv/tsv file.
-    \item Positive (Instance): A set of embeddings of one data point (e.g., an RGB image of an apple, corresponding depth image, text description, and speech description of the same apple)
-    \item Negative (Instance): A set of embeddings of another data point of a different object (e.g., an RGB image of a book, corresponding depth image, text description, and speech description of the same book)
-    \item Anchor (Modality): Every modality of the positive set is chosen as the learning anchor once. In our formulation, anchor is a ``concept'' referring to the points in the positive sets rather than a single instance in itself.
+    \item Positive (Instance): A set of embeddings of one data point (e.g., an RGB image of an apple, corresponding depth image, text description, and speech description of the same apple) as shown with green rectangles in \cref{fig:emma-loss-trimmed}
+    \item Negative (Instance): A set of embeddings of another data point of a different object (e.g., an RGB image of a mug, corresponding depth image, text description, and speech description of the same mug) as shown with orange rectangles in \cref{fig:emma-loss-trimmed}
+    \item Anchor (Modality): Every modality of the positive set is chosen as the learning anchor once. In our formulation, anchor is a ``concept'' referring to the points in the positive sets rather than a single instance in itself. In \cref{fig:emma-loss-trimmed}, each of the 4 modalities is selected as an anchor once.
     %For our experiments, text is used. 
     The anchor is used as the basis for learning distances between positive and negative samples.
     % variance of text is lower and clusters of different objects are more distinct compared to other modalities, therefore, it can train a better model.
@@ -240,177 +328,127 @@ The objective is then to first minimize the distance between each pair of positi
 % The objective is then to first minimize the distance between the anchor and each of the other positive points from heterogeneous modalities, and second, maximize the distance between the anchor and each of the negative points from all modalities.
 %and finally, maximize the distance between positive and negative anchor points from the same modality. 
 % When we minimize the distance between each pair of positives, and maximize the distance between each pair of modalities one from the positive set and one from the negative set, the model converges faster than \supcon{} while maintaining the same performance when we have all modalities and a little bit less than Supcon when we drop text. 
-We refer to this approach as \geom{}, for extended multimodal alignment which is formulated in \cref{eq:full-emma}. An illustration of this loss function is provided in \cref{fig:emma-loss}.
+We refer to this approach as \geom{} which is formulated in \cref{eq:full-emma}. An illustration of this loss function is provided in \cref{fig:emma-loss-trimmed}.
 
 % \begin{equation}\label{eq:full-emma}
 %     L = \sum_{m_1=1}^{M} \left[ \sum_{m_2=1}^{M} \left[ \max (\cos(z_{m_1}^{+}, z_{m_2}^{-}),0) \right] + \sum_{m_3=m_1+1}^{M} \left[ 1 - \max(\cos(z_{m_1}^{+},z_{m_3}^{+}),0) \right] \right]
 % \end{equation}
 \begin{equation}\label{eq:full-emma}
-    L = \sum_{m_1=1}^{M} \left[ \sum_{m_2=1}^{M} \left[ \max (\cos(z_{m_1}^{+}, z_{m_2}^{-}) -1 + \alpha,0) \right] + \sum_{m_3=m_1+1}^{M} \left[ \max(1 - \cos(z_{m_1}^{+},z_{m_3}^{+}),0) \right] \right]
+\begin{split}
+    L &= \sum_{m_1=1}^{M} \left[ \sum_{m_2=1}^{M} \left[ -\max (dist(z_{m_1}^{+}, z_{m_2}^{-}) + \alpha,0) \right] + \sum_{m_3=m_1+1}^{M} \left[ \max( dist(z_{m_1}^{+},z_{m_3}^{+}),0) \right] \right]
+\end{split}
 \end{equation}
 
 In \cref{eq:full-emma}, $M$ is the number of modalities, the superscripts $+$ and $-$ represent positive and negative objects, $\alpha$ represents enforced margin between each positive and negative points which we set to 0.4 for all modalities without tuning, and $z$ is the embedding we get by applying a mapping function $f$, which in our case is a neural network on our input data.
-In other words, $z_m = f_m(x_m)$, where each modality $m$ has a specific model $f_m$ that is different from the models for other modalities. These models do not share their weights. The $\cos(\cdot)$ function is a measure of similarity, not distance, and that is why the signs are reversed. 
+In other words, $z_m = f_m(x_m)$, where each modality $m$ has a specific model $f_m$ that is different from the models for other modalities. These models do not share their weights. 
 
-To measure distance in embedded space, we use cosine similarity between pairs of embeddings, i.e. we measure the cosine of the angle between embeddings. Cosine similarity is a good choice for high-dimensional data as it is bounded between -1 and 1. Other distance metrics, such as Euclidean distance, grow in value with respect to their dimensionality, resulting in a very large distances for data points. Cosine similarity is the opposite of distance, and we need to reverse the logic for maximization and minimization.
+
+Cosine similarity is the opposite of distance, and we need to reverse the logic for maximization and minimization. 
+% 
+There are different options to measure distance in embedded space. We use cosine similarity between pairs of embeddings, i.e. we measure the cosine of the angle between embeddings. Cosine similarity is a good choice for high-dimensional data as it is bounded between -1 and 1. Other distance metrics, such as Euclidean distance, grow in value with respect to their dimensionality, resulting in a very large distances for data points. 
+% The $\cos(\cdot)$ function is a measure of similarity, not distance, and that is why the signs are reversed. 
+
+
+
+\begin{figure*}[tb]
+\centering
+% \includegraphics[width=.9\columnwidth]{Figures/4way-MMA.png}
+% \includegraphics[width=2.1\columnwidth]{Figures/e-MMA.png}
+\includegraphics[width=1\columnwidth]{Figures/emma-loss-trimmed.pdf}
+\caption{A high-level prototype of our approach and the distances used in the \geom{} loss with four modalities. Gray arrows indicate pre-trained models that are frozen (i.e. the parameters are fixed and are not trained). The black arrows show 3 fully connected layers with a ReLU activation function~\citep{relu2010} after the first two layers. These networks are trained.
+Orange rectangles are negative embeddings and green rectangles are positive embeddings.
+Dashed lines indicate distances to be maximized while dotted lines indicate distances to be minimized.%, and solid lines show the enforced margin.
+}
+\label{fig:emma-loss-trimmed}
+\end{figure*}
+
+
+Here, the generic \textit{dist} function is replaced with the specific $\cos(\cdot)$, and we omit the max notation for clarity by defining \cref{eq:aux-equation}:
+
+\begin{equation}\label{eq:aux-equation}
+    \begin{split}
+        & g(x,y) = \max(\cos(x,y)-1 + \alpha, 0 ) \\
+        & h(x,y) = \max(1- \cos(x,y), 0 ).
+    \end{split}
+\end{equation}
+
+
+The first portion of the following equation maximizes all unique pairwise distances between modalities of positive and negative instances. The second portion minimizes the unique pairwise distances among the modalities of positive instances.
+
+\begin{equation}\label{eq:objective-geom}
+\begin{split}
+    \mathcal{L} & = \sum_{m_1=1}^{M}  \sum_{m_2=1}^{M} g(z_{m_1}^{+}, z_{m_2}^{-})  + \sum_{m_1=1}^{M} \sum_{m_3=m_1+1}^{M} h(z_{m_1}^{+},z_{m_3}^{+})
+    %  &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} dist( z_{i}^{+} , z_{j}^{+}) - dist( z_{i}^{+} , z_{j}^{-}) - dist( z_{i}^{-} , z_{j}^{+}) - \sum_{i=1}^{M} dist( z_{i}^{+} , z_{i}^{-} ) \\
+\end{split}    
+\end{equation}
+Our proposed \geom{} loss function in \cref{eq:objective-geom} can be rewritten as shown in \cref{eq:objective-geom-rewritten} by fully specifying the summations to better understand how our objective function can be reduced to well-known losses such as triplet loss and pairwise loss.
+
+\begin{equation}\label{eq:objective-geom-rewritten}
+\begin{split}
+     \mathcal{L} &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} h( z_{i}^{+} , z_{j}^{+})
+     + g( z_{i}^{+} , z_{j}^{-}) + g( z_{i}^{-} , z_{j}^{+}) + \sum_{i=1}^{M} g( z_{i}^{+} , z_{i}^{-} ).
+\end{split}
+\end{equation}
+
+
+
+If $M=2$ which means the number of modalities is 2, and we ignore the last two terms in the derived objective function, it results in the triplet loss method. 
+If $M=2$, then our objective function reduces to the quadruplet loss method~\citep{tursun2021efficient,chen2017beyond} if we multiply the first term by 2, ignore the third term, and change the last summation to be up to $M-1$ (which results a single term). 
+If $M=1$, only the last term remains in the loss function which is exactly the pairwise distance-based loss function.
+This loss function can be seen as a contrastive loss usually used in the domain of self-supervised learning~\citep{chen2020simple}. However, our proposed loss function has two advantages over the traditional contrastive loss expressed in \cref{eq:contrastive-loss}. The first advantage is that our loss function does not loop over multiple positives and negatives in a large batch. Instead we sample only two objects (positive and negative) each of which have $M$ modalities which gives us $2M$ datapoints (or embeddings). Hence, our model can be trained using smaller batch sizes and reduces the number of negative samples we need. The second advantage is that this loss function can be used in a multimodal setting with an arbitrary number of modalities, and is not limited to a single data type (e.g. RGB images) which is the most common usage of contrastive loss.
+% ~\citep{chen2020simple, NEURIPS2020_supervised_contrastive}.
+Although our \geom{} is technically quadratic in terms of number of modalities, we observe that experimentally, training time increases only by 10 minutes with each additional modality.
+
 
 Altogether, our proposed \geom{} function contains 
 $3M^2-M/2$ terms: 
 $M(M-1)/2$ anchor-to-positive distance minimizations and $M^2$ anchor-to-negative distance maximizations.
 %, and $M(M-1)/2$ \textcolor{red}{optional} negative-to-negative distance minimizations.
 %1 positive-to-negative anchor distance maximization.
-It is noteworthy that our training procedure does not perform any stochastic dropout of modalities to obtain test-time robustness to missing modalities. Moreover, our approach does not need to compute the distance between all items in the batch as opposed to \supcon{}~\cite{NEURIPS2020_supervised_contrastive}.
+It is noteworthy that our training procedure does not perform any stochastic dropout of modalities to obtain test-time robustness to missing modalities. Moreover, our approach does not need to compute the distance between all items in the batch, as opposed to \supcon{}.
+% ~\citep{NEURIPS2020_supervised_contrastive}.
 
-\begin{figure*}[tb]
-\centering
-% \includegraphics[width=.9\columnwidth]{Figures/4way-MMA.png}
-% \includegraphics[width=2.1\columnwidth]{Figures/e-MMA.png}
-\includegraphics[width=1\columnwidth]{Figures/emma-loss.pdf}
-\caption{A high-level prototype of our approach and the distances used in the \geom{} loss with four modalities. Gray arrows indicate pre-trained models that are frozen (i.e. the parameters are fixed and are not trained). The black arrows show 3 fully connected layers with a ReLU activitation function~\cite{relu2010} after the first two layers. These networks are trained.
-Orange rectangles are negative embeddings and green rectangles are positive embeddings.
-Dashed lines indicate distances to be maximized while dotted lines indicate distances to be minimized.%, and solid lines show the enforced margin.
-}
-\label{fig:emma-loss}
-\end{figure*}
-
-
-
-
-\subsection{Loss Development Story}
-\todokdinline{Should I move this whole section to supplementary or should I talk about the high-level takeaways in the main paper?}
-
-Our proposed loss function is a modification of the triplet loss function idea where we fix one modality as anchor and do not sample a positive instance from the same modality. 
-Na\"ively, to extend triplet loss to work with arbitrary number of modalities, we can use two anchors (e.g., text and speech), which results in $2(M-2)$ triplet losses as formulated in~\cref{eq:objective-two-anchors}. 
-\todoffinline{in this equation block, you're writing things like $|| z_{t}^{+} - z_{m}^{+} ||$. Do you actually mean norm, or would any old scoring function work?}
-\todokdinline{This whole section will be moved to supplementary, but anyway, would it be better if I just get rid of the $||.||$ and use $\cos(x)$ instead?}
-
-\begin{equation}
-\label{eq:objective-two-anchors}
-\begin{split}
-    \mathcal{L}  &= \sum_{m=1}^{M-2} || z_{t}^{+} - z_{m}^{+} || - || z_{t}^{+} - z_{m}^{-} || + || z_{s}^{+} - z_{m}^{+} || - || z_{s}^{+} - z_{m}^{-} || \\
-    &= \sum_{m=1}^{M-2} \cos(z_{t}^{+} ,z_{m}^{-}) - \cos(z_{t}^{+}, z_{m}^{+}) + \cos(z_{s}^{+} ,z_{m}^{-}) - \cos(z_{s}^{+}, z_{m}^{+})
-\end{split}
-\end{equation}
-
-However, this approach performs poorly when one of the anchor modalities is ablated; since there is no explicit minimization between anchors, they do not necessarily map closely to each other, such that only one of the two anchors is actually learned. 
-
-
-An alternative is to apply triplet loss $M-1$ times with a single anchor and $M-1$ `target' modalities.  In this case, the negative anchor point is disregarded. The positive anchor is used as an anchor for all $M-1$ triplet losses, and for each of those triplet losses the positive and negative points are simply selected from the corresponding modalities. \Cref{eq:objective-simple-mma} formulates this idea.
-
-\begin{equation}
-\label{eq:objective-simple-mma}
-\begin{split}
-    \mathcal{L}  &= \sum_{m=1}^{M-1} || z_{a}^{+} - z_{m}^{+} || - || z_{a}^{+} - z_{m}^{-} || \\
-    &= \sum_{m=1}^{M-1} \cos(z_{a}^{+} ,z_{m}^{-}) - \cos(z_{a}^{+}, z_{m}^{+})
-\end{split}
-\end{equation}
-
-However, this approach fails to take into account the dissimilarity of the positive and negative anchor points. This is an important piece of information that \cref{eq:objective-simple-mma} ignores. Although this information is implicitly captured when we maximize the distance between positive anchor and other negative modalities, when the negative data point becomes a positive example itself, the anchor and those points are forced to be closer to each other which can happen in three ways: either moving anchor closer to those points, moving those points closer to anchor, or move both somewhere in between. Therefore, in the last two cases we do not have explicit direct control over the distance between these points and previous positive points. Our experimental results confirm this hypothesis.
-
-Therefore, we add an extra term which is responsible for maximizing the distance between positive and negative instances of the anchor modality, because a margin between positive and negative points from other modalities (excluding anchor) is enforced. 
-% The first dashed line from the top in \cref{fig:emma-loss} is this extra term that captures the dissimilarity between positive and negative text datapoints.
-We formulate this method in \cref{eq:objective-explicit-fixed-anchor}, which is generalized to an arbitrary number of modalities.
-
-\begin{equation}
-\label{eq:objective-explicit-fixed-anchor}
-\begin{split}
-    \mathcal{L}  %&= %\sum_{m=1}^{M-1} || z_{a}^{+} - z_{m}^{+} || - || z_{a}^{+} - z_{m}^{-} ||  - || z_{a}^{+} - z_{a}^{-} || \\
-    &= \max(\cos(z_{a}^{+}, z_{a}^{-}) + \alpha_a, 0) + \sum_{m=1}^{M-1} \max \left(\cos(z_{a}^{+} ,z_{m}^{-}) - \cos(z_{a}^{+}, z_{m}^{+}) + \alpha_m, 0 \right) 
-\end{split}
-\end{equation}
-
-
-In \cref{eq:objective-explicit-fixed-anchor}, $a$ represents the \textit{anchor} modality, $M$ is the number of modalities, the superscripts $+$ and $-$ represent positive and negative objects, $\alpha_m$ represents enforced margin for each modality which we set to 0.4 for all modalities without tuning, and $z$ is the embedding we get by applying a mapping function $f$, which in our case is a neural network on our input data.
-In other words, $z_m = f_m(x_m)$, where each modality $m$ has a specific model $f_m$ that is different from the models for other modalities. These models do not share their weights. The $\cos(\cdot)$ function is a measure of similarity, not distance, and that is why the signs are reversed. 
-
-Since the downstream task we are considering in the grounded language learning domain is to predict/retrieve a desired object among multiple objects given a natural language description, it makes sense to train the model using language as an anchor, and in fact anchoring learning around language outperforms anchoring on RGB. However, if use all modalities as anchor once (looping over modalities and compute distances between each pair), it results in a better performance.
-
-
-% Triplet loss cannot be used for more than 2 modalities. Some previous work has concatenated RGB and depth embeddings to create a single ``vision'' embedding for learning~\cite{triplet_loss_2021_CVPR}, but they cannot handle RGB or depth sensor ablation during test. Since our method can handle any number of modalities, we can handle such a case by treating depth as a separate modality.
-% Moreover, when using triplet loss with different anchors per batch, the batch size has to be 1 which makes training very slow.
-
-% This approach is most similar to that of supervised contrastive learning~\cite{NEURIPS2020_supervised_contrastive}, but outperforms both that and regular contrastive learning~\cite{chen2020simple} methods when modalities are ablated, most notably written language.
-
-% We find that the use of instance level losses grounded to one key modality (text) is sufficient to encourage a representation that satisfies our goals. 
-
-
-
-
-
-\begin{comment}
-\subsubsection{Extended Triplet}
-Using an extended version of triplet loss to add all connections, which is formulated in \cref{eq:extended-triplet}, results in a worse performance.
-
-\begin{equation}\label{eq:extended-triplet}
-    L = \sum_{m_1=1}^{M} \left[ \sum_{m_2=m_1+1}^{M} \left[ \text{triplet}(z_{m_1}^{+}, z_{m_2}^{+}, z_{m_2}^{-}) + \text{triplet}(z_{m_1}^{-}, z_{m_2}^{-}, z_{m_2}^{+}) \right] + \cos(z_{m_1}^{+}, z_{m_1}^{-}) -1 + margin \right]
-\end{equation}
-Didn't change much when we drop text: Full eMMA when we have similar objects 
-
-Did not work: Run the version with all connections (including among negatives) without triplet and just by using cosine distance between pair of embeddings
-\end{comment}
-
-\begin{comment}
-\subsubsection{Smaller Batch Sizes}
-
-Reducing the batch size from 64 to 16 (for both eMMA and supcon) increases the gap between our model and the baseline in cases where our model beats the baseline (all modalities, dropping speech), but baseline is still better than ours when we drop the text modality.
-
-Batch size of 8 (for both eMMA and supcon) had a similar effect.
-
-In batch size of 2 the trend is still the same, but when we drop the text modality, the MRR graph is flat on 0.4 which is still better than worse case and random case, but it seems model doesn't learn anything with regards to speech.
-To remedy this, we add pulling connections among the modalities of the negative instance as formulated in \cref{eq:full-emma-pull-negatives} and as shown in \cref{fig:full-emma-pull-negatives}, and that solves the flatline problem when we drop the text modality, however, when we have all modalities it performs worse than formulation in \cref{eq:full-emma}.
-
-\begin{equation}\label{eq:full-emma-pull-negatives}
-\begin{split}
-    L = & \sum_{m_1=1}^{M} \left[ \sum_{m_2=1}^{M} \left[ \max (\cos(z_{m_1}^{+}, z_{m_2}^{-}) -1 + margin,0) \right] + \sum_{m_3=m_1+1}^{M} \left[ \max(1 - \cos(z_{m_1}^{+},z_{m_3}^{+}),0) \right] \right. \\
-    & \left. + \sum_{m_3=m_1+1}^{M} \left[ \max(1 - \cos(z_{m_1}^{-},z_{m_3}^{-}),0) \right] \right]
-\end{split}
-\end{equation}
-
-\begin{figure*}[tb]
-\centering
-\includegraphics[width=1\columnwidth]{Figures/full-emma-pull-negatives.pdf}
-\caption{A high-level prototype of our approach and the distances used when we have full EMMA and pulling among negatives}
-\label{fig:full-emma-pull-negatives}
-\end{figure*}
-\end{comment}
-
-\begin{comment}
-\subsubsection{Margin}
-% \todokdinline{Try different margins of 0.6, 1.0, and if it improved the results we can try to learn it as a parameter}
-\todokdinline{Should we remove this section?}
-I also tried two different margins so far. A margin of 0.6 and a margin of 1.0. Margin of 0.6 does not change the performance much. However, it converges even faster.
-Margin of 1.0 (this is essentially just cosine similarity because we have: cos -1 +margin) results in a worse performance when we have all modalities. The MRR is 0.8995 when margin is 1, while with a margin of 0.6 the MRR is 0.9176, and with a margin of 0.4 the MRR is 0.9198.
-If we drop the text modality, the MRR is 0.7923, 0.7913, and 0.6918 for margins of 0.4, 0.6, and 1.0 respectively.
-\end{comment}
-
-
-\subsection{EMMA: Extended Multimodal Alignment}
-\label{sub:emma}
-
-\todokdinline{We introduce \supcon{} in Baselines section which is after this section while we use SupCon as a part of our loss function here. Should we move the introduction of SupCon to here? Or maybe we can discuss the baselines first, and then Approach section follows it?}
-\todocmi{I suggest a section 4.3, Baseline Approach: Supervised Contrastive Learning (pushing EMMA down)}
+\paragraph{Combining Geometric and Cross-Entropy Losses}
+\label{subsec:emma}
 
 The main difference between \geom{} and \supcon{} is that in \geom{} we focus on the geometric interpretation of similarity using cosine distances, while in \supcon{}, cosine distances are used to compute a classification-based loss function similar to cross-entropy.
-Both methods are valid and have some advantages that the other method does not offer. In \geom{}, the advantages are intuitive learning objective in terms of distance, interpretability of the learned embedding space, and faster convergence. 
-The advantage of \supcon{} is that it uses classification objective which is aligned with the downstream task.
+Both methods are valid and have some advantages that the other method does not offer. In \geom{}, the advantages are an intuitive learning objective in terms of distance, interpretability of the learned embedding space, and faster convergence. 
+The advantage of \supcon{} is that it uses a classification objective which is aligned with the downstream task.
 
-We propose to combine the \geom{} and \supcon{} and we refer to this approach as \ours{}, for extended multimodal alignment. \ours{} loss function is formulated in \cref{eq:emma}.
+We propose to combine the \geom{} defined in \cref{eq:objective-geom} with \supcon{} defined in \cref{eq:supervised-contrastive}, and we refer to this approach as \ours{}, for extended multimodal alignment. The combination is done by taking the sum of the equations for \geom{} and \supcon{} which is shown in \cref{eq:emma}.
+When
+
 
 \begin{equation}\label{eq:emma}
-    % \mathcal{L} = \geom{} + \supcon{}
-    \ours{} = \geom{} + \supcon{}
+\begin{split}
+    \mathcal{L} =  \sum_{i \in I} \Biggr[ & \Bigr[ \sum_{j=1}^{M-1} \sum_{k=j+1}^{M} h( z_{i,j}^{+} , z_{i,k}^{+})
+     + g( z_{i,j}^{+} , z_{i,k}^{-}) + g( z_{i,j}^{-} , z_{i,k}^{+}) + \sum_{j=1}^{M} g( z_{i,j}^{+} , z_{i,j}^{-} )\Bigr] + \\
+     & \Bigr[ \sum_{m=1}^{M} \frac{-1}{|P(i,m)|}  \sum_{\beta \in P(i,m)} \log \frac{\exp (z_{i,m} \cdot z_{\beta} / \tau) }{\sum_{\gamma \in A(i,m)} \exp (z_{i,m} \cdot z_{\gamma} / \tau)} \Bigr] \Biggr], 
+     \end{split}
 \end{equation}
+where $A(i,m)$ includes all items in the batch except for the $z_{i,m}$ itself and $P(i,m)$ includes all the modalities of all instances that have the same label as current instance excluding $z_{i,m}$ itself. 
+In other words, the collection of embeddings indexed by $P(i,m)$ is $\{ \bigcup\limits_{r \neq m \in M} z_{i,r}, \bigcup\limits_{l \neq i \in I , y_i = y_l} \bigcup\limits_{m=1}^{M} z_{l,m} \} $.
 
-Combining these two losses results in faster convergence and better performance when we have all modalities available, and maintaining a good performance when modalities are missing.
+% \todo[inline]{Which one do you prefer? The first one is my attempt at using almost the same terminology for both SupCon and Geometric method, while the second one is simply copying and pasting the two equations next to each other.}
 
-\subsection{High-Level Findings/Observations}
-We find that using each modality as anchor results in a better performance compared to when we fix one modality as anchor. This difference is more significant when we test with all modalities.
+% \begin{equation}\label{eq:emma-append}
+%     \mathcal{L} = \Bigr[ \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} -\cos( z_{i}^{+} , z_{j}^{+})
+%      + \cos( z_{i}^{+} , z_{j}^{-}) + \cos( z_{i}^{-} , z_{j}^{+}) + \sum_{i=1}^{M} \cos( z_{i}^{+} , z_{i}^{-} ) \Bigr] + 
+%      \Bigr[ \sum_{i \in I} \frac{-1}{|P(i)|} \sum_{p \in P(i)} \log \frac{\exp (z_i \cdot z_p / \tau) }{\sum_{a \in A(i)} \exp (z_i \cdot z_a / \tau)} \Bigr]
+% \end{equation}
 
-While the performance of SupCon deteriorates as the batch size is reduced, our \geom{} stays the same when we have all modalities or when we drop speech. However, when we drop text, EMMA deteriorate when we decrease batch size, and with a batch size of 2 without pulling negatives, it flatlines. In this case (when batch size is 2 and text is dropped), pulling among negatives is important and results in a better MRR.
+% 
+% \begin{comment}
+% 
+% \begin{equation}\label{eq:emma}
+%     % \mathcal{L} = \geom{} + \supcon{}
+%     \ours{} = \geom{} + \supcon{}
+% \end{equation}
+% \end{comment}
+% 
+Compared to pure \supcon{}, combining these loss functions results in faster convergence and slightly improved performance when all modalities are available, and maintains improved performance when modalities are missing. Experimental results are presented in detail in \cref{sec:results}.
 
-
-We discuss the geometric interpretation of our method versus the classification interpretation of SupCon method and advantages of each.
-Finally, we show that combining \geom{} with \supcon{} is superior to either the \geom{} approach or \supcon{} alone.
+% We discuss the geometric interpretation of our method versus the classification interpretation of SupCon method and advantages of each. Finally, we show that combining \geom{} with \supcon{} is superior to either the \geom{} approach or \supcon{} alone.
 
 
 \begin{comment}
@@ -440,12 +478,13 @@ Adding temperature gives mixed results; when we have all the modalities during t
 \subsection{Network Architecture}
 \label{sec:Model}
 
-Transformers are de facto architectures in natural language processing community and have shown great success across different tasks. Similar to~\citet{GoLD_UMBC}, we use BERT~\cite{devlin-etal-2019-bert} embeddings contained in the FLAIR library ~\cite{akbik2019flair,akbik-etal-2019-pooled} to featurize the textual input, and wav2vec2~\cite{wav2vec2} to extract audio embeddings from speech. Both of these encoders output a 3072-dimensional embedding vector which is generated by concatenating the last four hidden layers of their corresponding networks. Both BERT~\cite{devlin-etal-2019-bert} and wav2vec2~\cite{wav2vec2} are self-supervised language models using transformers~\cite{vaswani2017attention}.
-% \todo[inline]{A couple of sentences about FLAIR and wav2vec2 and what they do}
+Transformers have become \textit{de facto} architectures in the natural language processing community and have shown great success across different tasks. Similar to~\citet{GoLD_UMBC}, we use BERT~\citep{devlin-etal-2019-bert} embeddings contained in the FLAIR library~\citep{akbik2019flair,akbik-etal-2019-pooled} to featurize textual input, and wav2vec2~\citep{wav2vec2} to extract audio embeddings from speech. Both of these encoders output a 3072-dimensional embedding vector which is generated by concatenating the last four hidden layers of their corresponding networks.
+FLAIR has historically been used for different natural language processing tasks such as named entity recognition (NER) and part-of-speech tagging (PoS), and wav2veq2 has supported a a number of audio processing tasks, most notably automated speech recognition.
+Both BERT~\citep{devlin-etal-2019-bert} and wav2vec2~\citep{wav2vec2} are self-supervised language models using transformers~\citep{vaswani2017attention}.
+% 
+To process images, we use ResNet152~\citep{He_resnet_2016} for both RGB and depth images which gives us a 2048-dimensional embedding vector. Depth images are colorized before passing to the ResNet152.
 
-To process images, we use ResNet152~\cite{He_resnet_2016} for both RGB and depth images which gives us a 2048-dimensional embedding vector. Depth images are colorized before passing to the ResNet152.
-
-We then use different instantiations of the same multi-layer perceptron (MLP) consisting of 3 fully connected layers with ReLU activation~\cite{relu2010} to map each of these embeddings to a shared 1024-dimensional space where we can compute the distances between all embeddings. We note that these MLP networks are different and do not share any weights.
+We then use different instantiations of the same multi-layer perceptron (MLP) consisting of 3 fully connected layers with ReLU activation~\citep{relu2010} to map each of these embeddings to a shared 1024-dimensional space where we can compute the distances between all embeddings. We note that these MLP networks are distinct and do not share any weights.
 
 
 
@@ -456,190 +495,58 @@ We then use different instantiations of the same multi-layer perceptron (MLP) co
 \section{Experiments}
 \label{sec:Experiments}
 
-In this section we evaluate the quality of object retrieval models learned using the EMMA loss function. We first describe the dataset we use, give the metrics by which we evaluate the performance, the setup of the experiments, the baselines we compare against, and we end the section by a presenting results and analyzing them.
+In this section we evaluate the quality of object retrieval models learned using the EMMA loss function. We first describe the dataset we use, then describe the metrics by which we evaluate performance, the setup of the experiments, and the baselines against which we compare. We end by presenting and analyzing results.
 
 \subsection{Data}
 \label{sec:Data}
 
-We demonstrate the effectiveness of our approach on a recent publicly available multimodal dataset called GoLD~\cite{GoLD_UMBC}, which contains RGB image, depth image, written text descriptions, speech descriptions, and transcribed speech descriptions for 207 object instances across 47 object classes (see \cref{fig:emma-loss}). There are a total of 16,500 speech and 16,500 textual descriptions. The original GoLD paper uses raw RGB and raw depth images in which other objects are present in the background. We use a masked version of the images where the background is deleted (we observe that a masked version converges faster, however, they both converge to the same performance). Speech is converted to 16 Hz to match the wav2vec2 speech model~\cite{wav2vec2}.
+We demonstrate the effectiveness of our approach on a recent publicly available multimodal dataset called GoLD~\citep{GoLD_UMBC}, which contains RGB images, depth images, written text descriptions, speech descriptions, and transcribed speech descriptions for 207 object instances across 47 object classes (see \cref{fig:emma-loss-trimmed}). There are a total of 16,500 spoken and 16,500 textual descriptions. The original GoLD paper uses raw RGB and depth images in which other objects are present in the background. We use a masked version of the images where the background is deleted (this masked version converges faster, however, masked and unmasked versions of the GoLD data converge to the same performance). Speech is converted to 16 Hz to match the wav2vec2 speech model.
 
 
-\subsection{Setup and Metrics}
-\label{sec:setupmetrics}
-To evaluate our model we measure different performance metrics on a retrieval task where the model has to select an object among 5 objects given a language description. Only one of the objects corresponds to the description and the rest are from different object classes (e.g., one apple among a set including a fork, a mug, a lemon, and a bell pepper).
-
-
-\subsubsection{Setup}
+\subsection{Setup}
+% \label{sec:setupmetrics}
 \label{sec:setup}
-Similar to~\citet{NEURIPS2020_supervised_contrastive}, we use a stochastic gradient descent (SGD) optimizer with momentum~\cite{ruder2016overviewSGD} with a flexible learning rate starting at 0.05. 
-% For the triplet loss experiments we use the Adam~\cite{kingma_adam_2015} optimizer with scheduling learning rate as suggested by the papers.
-All models are trained for 200 epochs with a batch size of 64 on a Quadro RTX 8000 GPU.
+To evaluate our model we measure different performance metrics on a retrieval task where the model has to select an object from a set of objects given a language description. Only one of the objects corresponds to the description and the rest are from different object classes.
+% (e.g., one apple among a set including a fork, a mug, a lemon, and a bell pepper).
+% 
+Similar to~\citet{NEURIPS2020_supervised_contrastive}, we use a stochastic gradient descent (SGD) optimizer with momentum~\citep{ruder2016overviewSGD} with a flexible learning rate starting at 0.05. 
+% For the triplet loss experiments we use the Adam~\citep{kingma_adam_2015} optimizer with scheduling learning rate as suggested by the papers.
+All models are trained for 200 epochs with a batch size of 64 on a Quadro RTX 8000 GPU. We used a temperature of $0.1$ for training the contrastive learning method described in \cref{sub:baseline-contrastive}, and a temperature of $0.07$ for training \supcon{} as described in \cref{sub:baseline-supcon}.
 
 
-To evaluate the performance, we compute the distance between the given natural language description and 5 randomly selected images (1 of which corresponds to the description, with the others from different object classes). We compute the distance between one language embedding and all candidate RGB embeddings, and we compute the distance between the same language embedding and all candidate depth embeddings corresponding to the RGB embeddings. We then take average of these two distance matrices. Instead of choosing an empirical threshold beyond which objects are considered to be `referred to,' we choose the closest image embedding (average distance of RGB and/or depth from language) as the prediction.
+To evaluate the performance, we compute the distance between the given natural language description and 5 randomly selected objects (1 of which corresponds to the description, with the others from different object classes). We compute the distance between the language embedding and all available sensory modalities of all candidates as described in \cref{sub:ablations}. In case we have RGB and depth, we compute the distance between language embedding and all candidate RGB embeddings, and we compute the distance between the same language embedding and all candidate depth embeddings corresponding to the RGB embeddings. We then take average of these two distance matrices. Instead of choosing an empirical threshold beyond which objects are considered to be `referred to,' we choose the closest image embedding (average distance of RGB and/or depth from language) as the prediction.
 In order to use cosine \textit{distance}, we have to subtract the cosine of the \textit{angle} between two embeddings (which represents similarity) from 1: that is, we compute $1 - \cos(e_1, e_2)$.
 
-\subsubsection{Metrics}
+\subsection{Metrics}
 \label{sec:metrics}
-The best metric to capture the performance in such a scenario is mean reciprocal rank (MRR, \cref{eq:mrr} for $Q$ queries). For each query we predict the rank of all objects based on their distance from the language command, and then the inverse rank of the desired objects in all queries are averaged. For example, if the model predicts the desired object as the first rank, then MRR = $\frac{1}{1} = 1$ which means a perfect score, and if it predicts the correct object as the last rank among five objects, then MRR = $\frac{1}{5}=0.2$. 
+The best metric to capture the performance in such a scenario is mean reciprocal rank (MRR, \cref{eq:mrr} for $Q$ queries). For each query we predict the rank of all objects based on their distance from the language command, and then the inverse rank of the desired objects in all queries are averaged. For example, if the model predicts the desired object as the first rank, then MRR = $\frac{1}{1} = 1$ which means a perfect score, and if it predicts the correct object as the fourth rank among five objects, then MRR = $\frac{1}{4}=0.25$. 
 
 \begin{equation} \label{eq:mrr}
     \mathrm{MRR}=\frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\operatorname{rank}_{i}}
 \end{equation}
 
+While MRR is more meaningful when it comes to ranking in retrieval tasks, in the real-world scenarios where a robot is asked to hand over an object, if it fails, it does not matter whether the correct object was ranked second or last and the whole system would be considered a failure.
 Accuracy and micro F1 score
 % (sklearn), flattened binary f1 score (sklearn), and F1 score 
-are the same in this task, since for each prediction we either have a true positive and no false positives and no false negatives, or we have no true positives, one false positive and one false negative. MRR is a more informative metric because it captures the idea that having the correct object as the second choice should be considered better than having it as a last choice, while in accuracy the score is ``all or nothing''---either 0 or 1. Because our approach is designed to be robust to missing information across modalities, we also report MRR for different combinations of modality dropouts. 
-
-
-\subsection{Baselines}
-We compare both \ours{} and \geom{} against contrastive learning~\cite{chen2020simple} and supervised contrastive learning~\cite{NEURIPS2020_supervised_contrastive} which we refer to as \supcon{}.
-We consider \supcon{} as the main baseline since it is a general version of multiple contrastive loss functions including triplet loss, the traditional version of contrastive loss usually used in self-supervised settings~\cite{chen2020simple}, and N-pair loss~\cite{NIPS2016N-PairLoss}.
-% and do not include N-pair and triplet loss in our comparisons.
-%contrastive learning methods including triplet loss, the traditional version of contrastive loss usually used in self-supervised settings~\cite{chen2020simple}, and supervised contrastive learning~\cite{NEURIPS2020_supervised_contrastive}. 
-
-
-
-\begin{table*}[]
-\centering
-\resizebox{.97\textwidth}{!}{
-\begin{tabular}{lc|ll|lll}
-\multicolumn{1}{c}{} &  & \multicolumn{2}{c|}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{Mean Reciprocal Rank}} \\ \hline
-\multicolumn{1}{c|}{\textbf{Method}} & \textbf{Modalities} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Speech/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Text/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Speech/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Text/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c}{\textbf{\begin{tabular}[c]{@{}c@{}}Text/Speech/\\ RGB/Depth\end{tabular}}} \\ \hline
-\multicolumn{1}{l|}{EMMA} & TSRD & \multicolumn{1}{l|}{\textbf{0.65}$\pm$0.01} & 0.83$\pm$0.006 & \multicolumn{1}{l|}{\textbf{0.79}$\pm$0.002} & \multicolumn{1}{l|}{0.90$\pm$0.003} & 0.90$\pm$0.004 \\
-\multicolumn{1}{l|}{EMMA} & 3 & \multicolumn{1}{l|}{--} & 0.84$\pm$0.008 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.90$\pm$0.004} & -- \\
-\multicolumn{1}{l|}{\supcon{}} & TSRD & \multicolumn{1}{l|}{0.59$\pm$0.007} & 0.84$\pm$0.008 & \multicolumn{1}{l|}{0.75$\pm$0.004} & \multicolumn{1}{l|}{0.91$\pm$0.006} & 0.90$\pm$0.006 \\
-\multicolumn{1}{l|}{\supcon{}} & 3 & \multicolumn{1}{l|}{--} & 0.84$\pm$0.006 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.91$\pm$0.004} & -- \\
-\multicolumn{1}{l|}{Contrastive Cosine} & TSRD & \multicolumn{1}{l|}{0.40$\pm$0.153} & 0.83$\pm$0.006 & \multicolumn{1}{l|}{0.62$\pm$0.034} & \multicolumn{1}{l|}{0.90$\pm$0.004} & 0.89$\pm$0.005 \\
-\multicolumn{1}{l|}{Contrastive Cosine} & 3 & \multicolumn{1}{l|}{--} & 0.84$\pm$0.005 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.91$\pm$0.003} & -- \\
-\multicolumn{1}{l|}{\ours{}} & TSRD & \multicolumn{1}{l|}{--} & 0.83$\pm$0.008 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.90$\pm$0.005} & -- \\ \hline
-\end{tabular}
-}
-\caption{Average and standard deviation of accuracy and MRR over 3 runs with 3 different random seeds on a held-out test set. These results represent performance when no modalities are ablated, in which case supervised contrastive loss, contrastive loss, and EMMA perform similarly (``--'' is an ablated modality and can't be evaluated). All metrics are from 0 to 1, and higher is better. For 5 objects, a random guess would have MRR of 0.33, and the worst case performance would be always ranking the correct item last which gives us 0.2. All models are trained using text as anchor. The batch size is 64 and optimizer is SGD for all experiments except the triplet loss, where batch size is 1 and optimizer is Adam. 
-%In the Triplet experiment, RGB and Depth embeddings are concatenated to form a single vision embedding since triplet loss cannot be used for more than two modalities.
-\todokdinline{Should we keep Acc or is MRR enough since table is out of bounds? Also, should we include other training modalities in the table? I inserted the results in a file called results-table.tex for now so that we can decide later.}
-}
-\todocmi{Let's include everything, and play tricks to shrink the table horizontally. If necessary it can be split into two tables with the same y headers and different x headers.}
-\todoffinline{I've added a resizebox in order to get this to fit. This is not the desired solution (though currently the text isn't that small, so it could be okay) but I needed to see the entire table easily.}
-\label{table:quantitative}
-\end{table*}
-% %Edward moved table above where refernced b/c LaTeX plays games with double-wide objects
-% \begin{table*}[bth]
-% \centering
-% \begin{tabular}{c|c|c|c|c|c|c}
-% \toprule
-% \textbf{Method} & \textbf{Modalities} & \textbf{acc.srd} & \textbf{acc.trd} & \textbf{MRR.srd} & \textbf{MRR.trd} & \textbf{MRR.tsrd} \\ %\hline
-% \midrule
-% EMMA (Text) & 4 & \textbf{0.65}$\pm$0.01 & 0.83$\pm$0.006 & \textbf{0.79}$\pm$0.002 & 0.90$\pm$0.003 & 0.90$\pm$0.004 \\
-% EMMA (Text) & 3 & - & 0.84$\pm$0.008 & - & 0.90$\pm$0.004 & - \\
-% % Simple MMA (Text)  & 3 & ?$\pm$? & ?$\pm$? & ? & ? \\
-% % Simple MMA (Text) & 4 & ?$\pm$? & ?$\pm$? & ? & ? \\
-% % Simple MMA (Speech) & 3 & ?$\pm$? & ?$\pm$? & ? & ?  \\
-% DONE Supervised Contrastive (Text)& 4 & 0.59$\pm$0.007 & 0.84$\pm$0.008 & 0.75$\pm$0.004 & 0.91$\pm$0.006 & 0.90$\pm$0.006  \\
-% TODO Supervised Contrastive (Text)& 3 & - & 0.84$\pm$0.006 & - & 0.91$\pm$0.004 & -\\
-% DONE Contrastive Cosine (Text) & 4 & 0.40$\pm$0.153 & 0.83$\pm$0.006 & 0.62$\pm$0.034  & 0.90$\pm$0.004 & 0.89$\pm$0.005\\
-% TODO Contrastive Cosine (Text) & 3 & - & 0.84$\pm$0.005 & -  & 0.91$\pm$0.003 & -\\
-% PROJ Triplet (Text) & 3 & - & 0.83$\pm$0.008 & - & 0.90$\pm$0.005 & -  \\
-% % DONE EMMA (Speech) & 3 & ?$\pm$? & ?$\pm$? & - & - \\
-% % DONE EMMA (Speech) & 4 & ?$\pm$? & ?$\pm$? & ? & ? \\
-% % DONE Supervised Contrastive (Speech)& 3 & ?$\pm$? & ?$\pm$? & - & -\\
-% % DONE Supervised Contrastive (Speech)& 4 & ?$\pm$? & ?$\pm$? & ? & ? \\
-% % TODO Contrastive Cosine (Speech) & 3 & ?$\pm$? & ?$\pm$?  & - & -\\
-% % TODO Contrastive Cosine (Speech) & 4 & ?$\pm$? & ?$\pm$?  & ? & ?\\
-% % DONE Triplet (Speech) & 3 & ?$\pm$? & ?$\pm$? & - & -  \\
-
-% % Full MMA (Text) w/ neg & 3 & ?$\pm$? & ?$\pm$? \\
-% % Simple MMA (Text) w/ neg Adam & 3  & 0.7949$\pm$? & 0.8778$\pm$? \\
-% % Simple MMA (Text) w/ neg SGD & 3 & 0.7905$\pm$? & 0.8821$\pm$? \\
-% % Triplet (Text) w/ neg & 3 & 0.7497$\pm$? & 0.8522$\pm$? \\
-% % Full MMA (Speech) w/ neg & 3 & ?$\pm$? & ?$\pm$? \\
-% % Simple MMA (Speech) w/ neg & 3 & 0.7949$\pm$? & 0.8778$\pm$? \\
-% % Contrastive Cosine (Text) w/ neg & 3 & 0.7894$\pm$? & 0.8788$\pm$?  & ? & ?\\
-% % Contrastive (Speech) w/ neg & 3 & ?$\pm$? & ?$\pm$? \\
-% % Triplet (Speech) w/ neg & 3 & 0.7497$\pm$? & 0.8522$\pm$? \\
-% \bottomrule
-% \end{tabular}
-% \caption{\label{table:quantitative}Average and standard deviation of accuracy and MRR over 3 runs with 3 different random seeds on a held-out test set. These results represent performance when no modalities are ablated, in which case supervised contrastive loss, contrastive loss, and EMMA perform similarly. All metrics are from 0 to 1, and higher is better. For 5 objects, a random guess would have MRR of 0.33, and the worst case performance would be always ranking the correct item last which gives us 0.2. All models are trained using text as anchor. The batch size is 64 and optimizer is SGD for all experiments except the triplet loss, where batch size is 1 and optimizer is Adam.
-% % \todokdinline{maybe adding results on cropped and raw dataset as well. Also results using object class instead of negative sampling}
-% }
-% \end{table*}
-
-
-\subsubsection{Triplet Loss}
-\label{sub:baseline-triplet}
-\todokdinline{Since we do not include triplet in our analysis, it might make more sense to move this section into the introduction of Approach to motivate why we came up with EMMA, thoughts?}
-
-The triplet loss function consists of three data points including anchor, positive, and negative from two modalities. The anchor, positive, and negative can be chosen from different modalities in each batch.
-The major disadvantage of the triplet loss method is that it cannot be used for more than two modalities. 
-%Second, a batch size of greater than 1 is hard to implement if the anchor, positive, and negative come from different modalities for each batch.
-% To address these issues in EMMA, we sample more than one positive and negative data points.
-\todokd{If moved to approach section, build on this to introduce our geometric loss function.}
-To address this issue, in \geom{} we use pairwise distance optimization for all data points. 
-%Intuitively, we sample one positive data point and one negative data point, each of which includes $M$ modalities, resulting in 2M data points. Each of the $M$ positives modalities become an anchor once. 
-% \Cref{table:quantitative} shows that our MMA method perform as good as this baseline while our model can be trained 10x faster since we can use batch sizes larger than 1. Also, 
-Our method can be used for any number of modalities, while previous works that use triplet loss~\cite{GoLD_UMBC,triplet_loss_2021_CVPR} concatenate RGB and depth to form a single ``vision'' vector to handle three modalities, but they cannot handle RGB or depth sensor ablation during test. Since our method can handle any number of modalities, we can handle such a case by treating depth as a separate modality.
-Moreover, our method has the advantage that does not require triplet mining or providing hard negative examples.
-% When we used a fixed anchor modality, a batch size of 64, and applied semantic negative sampling~\cite{Pillai_Matuszek_2018}, our method outperformed this baseline. However, 
-Since this method cannot be applied to four modalities, we do not include it in the main analysis. 
-
-\subsubsection{Contrastive Loss}
-\label{sub:baseline-contrastive}
-
-
-We compare our model against contrastive learning method presented by~\citet{chen2020simple} where they use the normalized
-temperature-scaled cross entropy loss (NT-Xent). In order to implement this loss function, we use cosine similarity as suggested in the SimCLR paper~\cite{chen2020simple}. Another possibility is to use an inner dot product~\cite{NEURIPS2020_supervised_contrastive}; if not normalized, this can lead to numerical instabilities and overflow/underflow since the dot product is not bounded, but the result is the same whether we use normalized inner dot product or cosine similarity. Contrastive loss function is formulated in \cref{eq:contrastive-loss}:
-% \todokdinline{try contrastive loss with cross-entropy, dot product, and the supervised contrastive method itself (without triplets).}
-
-% Original Formula
-\begin{equation}\label{eq:contrastive-loss}
-    -\sum_{i \in I} \log \frac{\exp (sim(z_i , z_{j(i)}) / \tau) }{\sum_{a \in A(i)} \exp (sim(z_i, z_a) / \tau)}
-\end{equation}
-% \begin{equation}\label{eq:contrastive-loss}
-%     -\sum_{i \in I} \log \frac{\exp (sim(f(x_i) , z_{j(i)}) / \tau) }{\sum_{a \in A(i)} \exp (sim(f(x_i), f(x_a)) / \tau)}
-% \end{equation}
-where $i$ is anchor, $j(i)$ is the set of positives excluding anchor, $a$ is the set of all positives and negatives excluding anchor, and $z = f(x)$.
-
-We can treat different modalities of the same instance as ``augmentations'' of that instance, and consider them as the positive points for the anchor.
-\Cref{eq:contrastive-loss} can be rewritten with the sum over positives explicitly shown as formulated in \cref{eq:explicit-contrastive}.
-
-%, which is equivalent to ``augmented views'' in the contrastive loss terminology.
-
-\todokdinline{Notation for M - i, it should be something like other modalities of the anchor but it shouldn't be over number of modalities.}
-\begin{equation}\label{eq:explicit-contrastive}
-    - \sum_{i \in I} \sum_{p=1}^{M \setminus \{i\} } \log \frac{\exp (sim(z_i , z_{p})/ \tau) }{
-    \sum_{a \in A(i)} \exp (sim(z_i, z_a) / \tau)}
-    %{ \exp (sim(z_i^+ , z_{m}^{+}) / \tau) + \exp (sim(z_i^+, z_{m}^{-}) / \tau)}
-\end{equation}
-where $M$ is the number of modalities (e.g. RGB image, depth image, speech, text) and $z = f(x)$.
-
-
-\subsubsection{Supervised Contrastive Learning}
-\label{sub:baseline-supcon}
-
-\citet{NEURIPS2020_supervised_contrastive} extend the contrastive learning method (NT-Xent) and propose a supervised way of performing contrastive learning to treat not only augmentations of the anchor, but also every item that shares the same label with anchor as positives. This loss function is shown in \cref{eq:supervised-contrastive}.
-
-\begin{equation}\label{eq:supervised-contrastive}
-    \sum_{i \in I} \frac{-1}{|P(i)|} \sum_{p \in P(i)} \log \frac{\exp (z_i \cdot z_p / \tau) }{\sum_{a \in A(i)} \exp (z_i \cdot z_a / \tau)}
-\end{equation}
-
-% \begin{equation}\label{eq:supervised-contrastive-my-notation}
-%     \sum_{i \in I} \frac{-1}{|P(i)|} \sum_{p \in P(i)} \log \frac{\exp (f_i(x_i) \cdot f_p(x_p) / \tau) }{\sum_{a \in A(i)} \exp (f_i(x_i) \cdot f_a(x_a) / \tau)}
-% \end{equation}
-
-Although, this loss function do not use cosine similarity, they normalize the embeddings before performing dot product which is equivalent to cosine similarity.
-
-The main difference between the contrastive loss baseline in \cref{sub:baseline-contrastive} and \supcon{} is that there is no notion of meaningful negative points in contrastive loss, and everything in the batch that is not the anchor or one of the positive views is considered to be negative. In \supcon{}, however, all elements in the batch that have same label as the anchor, are also considered positives in addition to different views of the same instance. While the denominators of \cref{eq:explicit-contrastive,eq:supervised-contrastive} stay the same, this subtle difference affects the numerator and includes more positive examples.
-
-While this model is a strong baseline, the authors applied it to a unimodal dataset. In this paper we extend this baseline to work with a multimodal dataset and show that it is slower than \ours{} to learn and its performance is also lower when all modalities are available during test time.
-% if modalities are ablated, this method does not perform as well as our proposed model (we show and discuss this later, in \cref{fig:epochs-mrr.srd}). This is especially true when the text modality is dropped, as is likely in physical agent scenarios, where speech is a natural interaction mechanism.
+are the same in this task, since for each prediction we either have a true positive and no false positives and no false negatives, or we have no true positives, one false positive and one false negative. MRR is a more informative metric because it captures the idea that having the correct object as the second choice should be considered better than having it as a last choice, while in accuracy the score is ``all or nothing''---either 0 or 1. Because our approach is designed to be robust to missing information across modalities, we also report MRR and accuracy for different combinations of modality dropouts. 
 
 
 \subsection{Modality Ablation}
+\label{sub:ablations}
 % \todokdinline{Should I remove this section altogether or should I just mention that our method is equal or better in all cases except when we drop text? Or should I spend more time to come up with something so that we can perform better than baseline even in this case?}
-We consider an experiment in which we incorporate RGB, depth, speech, and written language to train the model. The loss function requires no changes beyond adjusting the value of $M$ in \cref{eq:full-emma} according to the number of modalities available during training. Our goal is the non-trivial downstream prediction task: determining what objects are being referred to by arbitrary language from a small number of examples. When we consider only text, RGB, and depth, written language is used as the query modality, and we compute the distance of RGB and depth modalities from it and then average them. However, when speech is incorporated as an additional fourth sensory modality, we have three possible choices. \textit{First}, we can compute the distance of RGB and depth from text and from speech which gives us 4 distance matrices, and then take average of these four. \textit{Second}, we can treat speech in a similar way to RGB and depth: compute the distance of RGB, depth, and speech from text, and then take an average of three of them. \textit{Third}, similar to the first method, but adding the distance between language and speech as well and then take the average of 5 distance matrices.
+We consider an experiment in which we incorporate RGB, depth, speech, and written language to train the model. The loss function requires no changes beyond adjusting the value of $M$ in \cref{eq:full-emma} according to the number of modalities available during training. Our goal is the non-trivial downstream prediction task: determining what objects are being referred to by arbitrary language from a small number of examples. When we consider only text, RGB, and depth, written language is used as the query modality, and we compute the distance of RGB and depth modalities from it and then average them. However, when speech is incorporated as an additional fourth sensory modality, we have three possible choices. First, we could compute the distance of RGB and depth from text and from speech which gives us 4 distance matrices, and then take average of these four. Second, we could treat speech in a similar way to RGB and depth: compute the distance of RGB, depth, and speech from text, and then take an average of three of them. Third, we could compute distances similarly to the first method, but add the distance between language and speech as well and then take the average of 5 distance matrices.
 
 Of these, the first method is the most appropriate choice for a robust multimodal alignment approach. The second and third options are possible during training, but in real-world object retrieval scenarios, having only one form of language instructions is a reasonable scenario---people are not likely to \textit{both} speak about \textit{and} type in instructions for an agent. At test time, depending on which modalities are available to the model, we can use speech, text, or both to compute the distance of RGB and depth embeddings from the linguistic query, and then take the average.
-\Cref{eq:distance-matrix} shows all possible cases of modality dropout and the corresponding distance computations, where ``t'' represents \textit{text}, ``s'' represents \textit{speech}, ``r'' represents \textit{RGB}, ``d'' represents \textit{depth}, $K_{ij}$ for each pair of modalities is the distance of one instance in modality $i$ from all candidate instances in modality $j$, and $K$ is the final distance---a matrix if there are multiple queries and a vector if there is one query.
+
+There are total of nine possible cases of modality dropout and the corresponding distance computations. In all these cases \textit{t} represents text, \textit{s} represents speech, \textit{r} represents RGB, \textit{d} represents depth, and $K$ is the final distance---a matrix if there are multiple language queries and a vector if there is one query.
+If we only have two modalities, we simply compute the distance between those two modalities; this corresponds to four of the cases; $K_{tr}$ when speech and depth are missing, $K_{sr}$ when text and depth are missing, $K_{td}$ when speech and RGB are missing, and $K_{sd}$ when text and RGB are missing. If we have three modalities, we need to take average of two distances. There are four cases with three modalities, $K_{trd} = \frac{K_{tr} + K_{td}}{2}$ when speech is missing, $K_{srd} = \frac{K_{sr} + K_{sd}}{2}$ when text is missing, 
+and so on.
+% $K_{tsr} = \frac{K_{tr} + K_{sr}}{2}$ when depth is missing, and $K_{tsd} = \frac{K_{td} + K_{sd}}{2}$ when RGB is missing. 
+When we have all modalities available we take average of four distances, $K_{tsrd} = \frac{K_{tr}+ K_{td} +K_{sr} + K_{sd}}{4}$. 
+
+% \Cref{eq:distance-matrix} shows all possible cases of modality dropout and the corresponding distance computations, where \textit{t} represents text, \textit{s} represents speech, \textit{r} represents RGB, \textit{d} represents depth, $K_{ij}$ for each pair of modalities is the distance of one instance in modality $i$ from all candidate instances in modality $j$, and $K$ is the final distance---a matrix if there are multiple queries and a vector if there is one query.
+
+\begin{comment}
 \begin{equation}
 \label{eq:distance-matrix}
 K = 
@@ -655,102 +562,156 @@ K =
         K_{tsrd} = \frac{K_{tr} + K_{td} + K_{sr} + K_{sd} }{4} & \text{o.w.} \\
     \end{cases}
 \end{equation}
+% \todo[inline]{equation \cref{eq:distance-matrix} takes a lot of space which suggests it's important. Either merge it in text or ...}
+\end{comment}
+
+\Cref{fig:result_graphs} shows the relative performance of \ours{} and \geom{} against state-of-the-art methods when different modalities are ablated.
 
 
-\Cref{fig:epochs-mrr.lard,fig:epochs-mrr.srd,fig:epochs-mrr.ld,fig:epochs-mrr.lr} show the relative performance of \ours{} and \geom{} against baselines when different modalities are ablated.
-
-
-\subsection{Results}
+\section{Results}
 \label{sec:results}
 
-In this section we provide quantitative and qualitative results by comparing our method against supervised contrastive learning~\cite{NEURIPS2020_supervised_contrastive} and na\"ive contrastive loss~\cite{chen2020simple}.
+In this section we provide quantitative and qualitative results by comparing our method against supervised contrastive learning~\citep{NEURIPS2020_supervised_contrastive} and na\"ive contrastive loss~\citep{chen2020simple}.
 % We evaluate our EMMA loss function against the na\"ive triplet loss method. Our model significantly outperforms the triplet method across all epochs while it converges faster as shown in \cref{fig:epochs-mrr.srd}.
 \Cref{table:quantitative} summarizes the performance of all models with different ablation metrics.
 % \todo[inline]{Why do we call out triplet loss specifically? We evaluate against several baselines? I don't understand this section particularly}
-To provide a better sense of the performance measure, we can think of a model that always ranks the correct object in the second place which is not very bad. Such a model would have MRR of $1/2 = 0.5$.
+To provide a better sense of the performance measure, consider a model that always ranks the correct object in the second place: Such a model would have an MRR of $1/2 = 0.5$.
 
-\Cref{fig:epochs-mrr.lard} Shows that \ours{} learns faster and results in a better performance compared to both \supcon{} and contrastive learning~\cite{chen2020simple} when trained using all modalities and all modalities are available during test. We observe that not only does contrastive loss learn more slowly, but that it is prone to overfitting; while this can be addressed with careful tuning of the learning process, it is better not to have to.
-
-\begin{figure}[tbh]
-\centering
-\includegraphics[width=.99\columnwidth]{Figures/average-seeds-epochs-mrr_lard}
-\caption{Mean Reciprocal Rank (MRR) on the held-out test set when all modalities are available, averaged over 5 runs. Green is \ours{}, orange is \supcon{}, blue represents our \geom{} loss function, and red is the contrastive loss baseline. Higher is better.
-}
-\label{fig:epochs-mrr.lard}
-\end{figure}
-
-
-% Comparing \cref{fig:epochs-mrr.trd} and 
-When we drop the text modality in \cref{fig:epochs-mrr.srd}, we can see that the performance decreases from about 0.93 to about 0.82, showing that speech cannot completely replace the text. \Cref{fig:3d-tsne} depicts that speech modality is not aligned as good as the text modality and that is why when we drop text and use speech as the main query, the performance decreases. This supports our hypothesis that a geometric alignment of the latent space is crucial to a good performance for object retrieval and multimodal understanding.
-In \cref{fig:epochs-mrr.srd}, we observe that when speech is used as the query and text modality is ablated, \supcon{} baseline works slightly better than \ours{}, although \ours{} still learns faster. The reason is that \supcon{} optimizes for the classification task, and since the speech modality is not well aligned based on \cref{fig:3d-tsne}, using \geom{} makes the downstream task more difficult by trying to pull and push similar and dissimilar data points, respectively. More research needs to be done to come up with strategies to align more chaotic modalities.
-% We also observe that speech has a higher variance compared to text, and a na\"ive contrastive learning method cannot take advantage of text modality to reduce this variance. While the other two methods leverage text modality to align speech better.
-
-There is very little gap in performance when depth or RGB are dropped in \cref{fig:epochs-mrr.lr,fig:epochs-mrr.ld} compared to when we have all modalities in \cref{fig:epochs-mrr.lard} which shows that our model is robust enough when rgb or depth sensors fail in real-world deployment. Also, when depth is dropped in \cref{fig:epochs-mrr.lr} performance decreases less compared to when rgb is dropped in \cref{fig:epochs-mrr.ld} which suggests that depth is harder to work with compared to RGB. 
-
-
-
-\begin{figure}[tbh]
-\centering
-\includegraphics[width=.99\columnwidth]{Figures/average-seeds-epochs-mrr_ard.pdf}
-\caption{Mean Reciprocal Rank (MRR) on the held-out test set when the text modality is ablated, averaged over 5 runs. Green is self-supervised contrastive learning, orange is supervised contrastive learning, and blue represents our proposed EMMA loss function. Higher is better.
-}
-\label{fig:epochs-mrr.srd}
-\end{figure}
+\begin{table*}[tb]
+    \centering
+    \begin{subtable}[t]{1.00\textwidth}
+    \centering
+    \resizebox{1.0\textwidth}{!}{
+    \input{tableMRR}
+    }
+    \caption[]{Average and standard deviation of mean reciprocal rank (MRR) on a held-out test set. MRR is from $\frac{1}{\text{number of objects}}$\% to 100\%.
+    In most cases \ours{} has a better MRR compared to other methods, and all methods have a higher MRR when text modality is present. This shows that text modality is a rich source of information compared to speech, and that \ours{} is strongly competitive with state of the art approaches even when relying on speech for the language signal.
+    % \todocmi{Right? Correct}
+    }
+    \label{table:mrr}
+    \end{subtable}
+    \vskip\baselineskip
+    \begin{subtable}[t]{1.00\textwidth}
+    \centering
+    \resizebox{1.0\textwidth}{!}{
+    \input{tableACC}
+    }
+    \caption[]{Average and standard deviation of accuracy (Acc) on a held-out test set. Accuracy is from 0\% to 100\%.
+    Although accuracy is a strictly less forgiving metric than MRR, these results demonstrate that \ours{} still outperforms existing approaches in the majority of cases. When we drop the text modality, the accuracy of the contrastive method is slightly better than random, while \ours{} is about 10\% more accurate than the contrastive method.
+    }
+    \label{table:acc}
+    \end{subtable}
+    \caption{Average and standard deviation of mean reciprocal rank (MRR) and accuracy (Acc) over 5 runs with 5 different random seeds on a held-out test set with different modalities ablated during testing. \Cref{table:mrr} shows MRR scores and \cref{table:acc} shows accuracy.
+    % . These results represent performance when no modalities are ablated during training. 
+     Higher is better for both metrics. For 5 objects, a random guess would have MRR of 0.33 and accuracy of 0.5, and the worst case performance would have MRR of 0.2 and accuracy of 0.0. The batch size is 64 and optimizer is SGD for all experiments. Column headers refer to modalities that are present at query time.
+    % ---e.g., MRR \textit{sd} contains only speech and depth. 
+    Bold numbers represent the best-performing method. \ours{} is either better than or very close to both state-of-the-art methods for most of the cases. We observe the same pattern in both MRR and accuracy except the fact that accuracy scores are lower than MRR.
+    }
+    \label{table:quantitative}
+\end{table*}
 
 \begin{comment}
-\begin{figure}[tbh]
-\centering
-\includegraphics[width=.99\columnwidth]{Figures/average-seeds-epochs-mrr_lrd.pdf}
-\caption{Mean Reciprocal Rank (MRR) on the held-out test set when the speech modality is ablated, averaged over 5 runs, for the downstream task of object retrieval when all objects are unique. Green is self-supervised contrastive learning, orange is supervised contrastive learning, and blue represents our proposed EMMA loss function. Higher is better. When speech as a modality is ablated, all tested methods perform similarly.
-}
-\label{fig:epochs-mrr.trd}
-\end{figure}
+\begin{table*}[tb]
+    \centering
+    \begin{subtable}[t]{1.00\textwidth}
+    \centering
+    \resizebox{.99\textwidth}{!}{
+    \csvautotabular{Figures/unused/resultsMRR.csv}
+    }
+    \end{subtable}
+    \vskip\baselineskip
+    % \hfill
+    \begin{subtable}[t]{1.00\textwidth}
+    \centering
+    \resizebox{.99\textwidth}{!}{
+    \csvautotabular{Figures/unused/resultsACC.csv}
+    }
+    \end{subtable}
+\end{table*}
 \end{comment}
 
-\begin{figure}[tbh]
-\centering
-\includegraphics[width=.99\columnwidth]{Figures/average-seeds-epochs-mrr_lr.pdf}
-\caption{Mean Reciprocal Rank (MRR) on the held-out test set when speech and depth modalities are ablated, averaged over 5 runs for the downstream task of object retrieval when all objects are unique.  Green is \ours{}, orange is \supcon{}, and blue represents our proposed \geom{} loss function. Higher is better.
-}
-% \todocmi{Maybe MRR is wrong and we should be looking at top-ranked result?}
-\label{fig:epochs-mrr.lr}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/average-seeds-epochs-mrr_lard-trimmed.pdf}
+        \caption[]{Mean Reciprocal Rank (MRR) on the held-out test set when all modalities are available.}    
+        \label{fig:epochs-mrr.lard}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}  
+        \centering 
+        \includegraphics[width=\textwidth]{Figures/average-seeds-epochs-mrr_ard-trimmed.pdf}
+        \caption[]{Mean Reciprocal Rank (MRR) on the held-out test set when the text modality is ablated.}
+        \label{fig:epochs-mrr.srd}
+    \end{subfigure}
+    \vskip\baselineskip
+    \begin{subfigure}[b]{0.49\textwidth}   
+        \centering 
+        \includegraphics[width=\textwidth]{Figures/average-seeds-epochs-mrr_lr-trimmed.pdf}
+        \caption[]{Mean Reciprocal Rank (MRR) on the held-out test set when speech and depth modalities are ablated.}    
+        \label{fig:epochs-mrr.lr}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}   
+        \centering 
+        \includegraphics[width=\textwidth]{Figures/average-seeds-epochs-mrr_ld-trimmed.pdf}
+        \caption[]{Mean Reciprocal Rank (MRR) on the held-out test set when speech and RGB modalities are dropped.}    
+        \label{fig:epochs-mrr.ld}
+    \end{subfigure}
+    \caption[]
+    {Mean Reciprocal Rank (MRR, \cref{eq:mrr}) on the held-out test set with the ablation of selected modalities, all averaged over 5 runs for the downstream task of object retrieval. Red is self-supervised contrastive learning which is prone to overfitting, orange is supervised contrastive learning, blue represents our proposed \geom{}, and green is our proposed \ours{} loss function. Higher is better. (a) shows the MRR when all modalities are available, (b) shows the MRR when text is removed at test time, (c) shows MRR when speech and depth are ablated, and (d) shows MRR when speech and RGB are removed. We train all models for 200 epochs.
+    } 
+    \label{fig:result_graphs}
 \end{figure}
+%     
+% 
+\Cref{fig:epochs-mrr.lard} Shows that \ours{} learns faster and results in a better performance compared to both \supcon{} and contrastive learning~\citep{chen2020simple} when trained using all modalities and with all modalities available during test. We observe that not only does contrastive loss learn more slowly, but that it is prone to overfitting; while this can be addressed with careful tuning of the learning process, an approach that is innately robust to overfitting without tuning is preferable.
 
+When we drop the text modality (\cref{fig:epochs-mrr.srd}), we can see that the performance decreases from about 0.93 to about 0.82, showing that speech cannot completely replace text. In \cref{fig:3d-tsne} (see \cref{sec:Qualitative}), the alignment of shared embeddings for a randomly sampled set of classes is visualized for all four modalities under consideration, suggesting that the speech modality is not aligned as well as the text modality. For this reason, when we drop text and use speech as the main query, the performance decreases. This supports our hypothesis that a geometric alignment of the latent space is crucial to a good performance for object retrieval and multimodal understanding.
 
+In \cref{fig:epochs-mrr.srd}, we observe that when speech is used as the query and the text modality is ablated, the \supcon{} baseline works slightly better than \ours{}, although \ours{} still learns faster. The reason is that \supcon{} optimizes for the classification task, and since the speech modality is less well aligned, using \geom{} makes the downstream task more difficult by trying to pull and push similar and dissimilar data points, respectively. Future research will consider strategies to align more chaotic modalities.
+% We also observe that speech has a higher variance compared to text, and a na\"ive contrastive learning method cannot take advantage of text modality to reduce this variance. While the other two methods leverage text modality to align speech better.
 
-\begin{figure}[tbh]
-\centering
-\includegraphics[width=.99\columnwidth]{Figures/average-seeds-epochs-mrr_ld.pdf}
-\caption{Mean Reciprocal Rank (MRR) on the held-out test set when speech and RGB modalities are dropped averaged over 5 runs for the downstream task of object retrieval when all objects are unique. Green is \ours{}, orange is \supcon{}, and blue represents our proposed \geom{} loss function. Higher is better.
-}
-\label{fig:epochs-mrr.ld}
-\end{figure}
+There is very little gap in performance when depth or RGB are dropped in \cref{fig:epochs-mrr.lr,fig:epochs-mrr.ld} compared to when we have all modalities in \cref{fig:epochs-mrr.lard}, showing that our model is robust when RGB or depth sensors fail. Also, when depth is dropped in \cref{fig:epochs-mrr.lr}, performance decreases less compared to when RGB is dropped in \cref{fig:epochs-mrr.ld}. This suggests that depth is less informative when compared to RGB, which is consistent with existing vision research results. 
 
-\begin{figure*}[tbh]
+% \todocmi{Main remaining task is to sort out figures. They should all have meaningful y axis labels and essentially no whitespace surrounding them.}
+
+\paragraph{Qualitative Results}
+\label{sec:Qualitative}
+In order to help visualize the performance of learned embeddings, we consider projections of a randomly selected subset of classes of the high-dimensional learned embeddings into a 3-dimensional space using t-SNE~\citep{van2008tsne}, a dimensionality reduction technique to visualize high-dimensional data. T-SNE creates a probability distribution over pairs of high-dimensional data where similar pairs have a higher probability and dissimilar pairs have a lower probability. A similar probability distribution is also defined over pairs of data in the lower dimension (either 2D or 3D), and T-SNE minimizes the KL divergence between these two probability distributions.
+% \textcolor{red}{\dots}\todo{explanation}. 
+% \Cref{fig:2d-tsne} shows the projection of all test embeddings from all different modalities in a 2D space. As shown in the graph, instances of the same class but different modality are mapped to almost the same locations and are closer to each other.
+\Cref{fig:3d-tsne} shows the projection onto 3D space to give a better view of the location of embeddings. Although these projections are not perfect, combined with the quantitative results, they demonstrate that our model is learning to map instances of the same class closer to each other regardless of their modalities. Interestingly, toothbrush and toothpaste are mapped almost on top of each other in the text modality showing semantic and syntax similarity. However, in the RGB and depth modality they are close but not on top of each other since they do not look the same. Also, we can see that apple and lemon are mapped close to each other in all modalities which suggests that our proposed \ours{} learns some notion of the concept of fruits. These qualitative results show that our propose \geom{} and \ours{} have an interpretable latent space.
+
+\begin{figure*}[h]
 \centering
 % \includegraphics[width=1.99\columnwidth]{Figures/3D-tsne-4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024-sbs.png}
 % \includegraphics[width=1\columnwidth]{Figures/3D-tsne-4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024-sbs.png}
-\includegraphics[width=1\columnwidth]{Figures/3D-tsne-exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024-sbs.png}
-\caption{3D T-SNE~\cite{van2008tsne} projection of test embeddings of 10 randomly selected classes of objects using our proposed \ours{}. Each modality is separately projected into a three-dimensional space. In a perfect embedding, all instances of a class would be clustered in identical areas of the embedding space across all modalities. We can see that \ours{} successfully encourages all four modalities to live in a common manifold, allowing accurate retrieval even when modalities are missing. 
+% \includegraphics[width=.99\columnwidth]{Figures/3D-tsne-exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024-sbs-trimmed.png}
+\includegraphics[width=.99\columnwidth]{Figures/3D-tsne-exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024-trimmed.pdf}
+\caption{3D T-SNE~\citep{van2008tsne} projection of test embeddings of 10 randomly selected classes of objects using \ours{}. Each modality is separately projected into a three-dimensional space. Each RGB and depth image is associated with several language descriptions, leading to denser plots for text and speech. In a perfect embedding, all instances of a class would be clustered in identical areas of the embedding space across all modalities. We can see that \ours{} successfully encourages all four modalities to live in a common manifold, allowing accurate retrieval even when modalities are missing.
 }
+% \todo[inline]{get rid of markers for modalities, and change the colors to be brighter. Try combining marker and color for each class.}
+
 \label{fig:3d-tsne}
 \end{figure*}
 
-% \subsection{Qualitative Results}
-% \label{sec:Qualitative}
-We look into the projection of the high-dimensional learned embeddings into a 
-%2-dimensional and 
-3-dimensional space using t-SNE~\cite{van2008tsne}, which is a dimensionality reduction technique to visualize high-dimensional data. T-SNE creates a probability distribution over pairs of high-dimensional data where similar pairs have a higher probability and dissimilar pairs have a lower probability. A similar probability distribution is also defined over pairs of data in the lower dimension (either 2D or 3D), and T-SNE minimizes the KL divergence between these two probability distributions.
-% \textcolor{red}{\dots}\todo{explanation}. 
-% \Cref{fig:2d-tsne} shows the projection of all test embeddings from all different modalities in a 2D space. As shown in the graph, instances of the same class but different modality are mapped to almost the same locations and are closer to each other.
-\Cref{fig:3d-tsne} shows the projection onto 3D space to give a better view of the location of embeddings. Although these projections are not perfect, combined with the quantitative results, they demonstrate that our model is learning to map instances of the same class closer to each other regardless of their modalities.
+An example of the need to consider multiple modalities jointly is shown in \cref{fig:rankings}, showing how EMMA is able to correctly select an object instance from several similarly shaped and describable objects. 
 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.99\columnwidth]{Figures/example-rankings-rearranged}
+\caption{\ours{} more accurately ranks objects and handles ambiguities with respect to a retrieval queries. Note that the phrase ``light blue'' in the query is very similar to ``light bulb'' and while \supcon{} confuses this and predicts light bulb as the correct object, \ours{} correctly identifies the can opener as the intended object, ranking the light bulb second.}
+\label{fig:rankings}
+\end{figure}
 
 
 % \begin{figure}[tbh]
 % \centering
 % \includegraphics[width=.99\columnwidth]{Figures/2D-tsne-4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024.pdf}
-% \caption{2D T-SNE~\cite{van2008tsne} projection of test embeddings of 10 randomly selected classes of objects using our proposed method. Each modality is separately projected into a two-dimensional space. \Rephrase{} \textcolor{red}{We may only want 3D}
+% \caption{2D T-SNE~\citep{van2008tsne} projection of test embeddings of 10 randomly selected classes of objects using our proposed method. Each modality is separately projected into a two-dimensional space. \Rephrase{} \textcolor{red}{We may only want 3D}
 % }
 % \label{fig:2d-tsne}
 % \end{figure}
@@ -772,21 +733,10 @@ We look into the projection of the high-dimensional learned embeddings into a
 
 
 \subsection{Discussion}
-Our proposed model performs well and learns fast, has been demonstrated to handle four modalities of shared information effectively, and is robust to test-time situations where information from one or more modalities is missing. 
+Our proposed model performs well and learns fast, has been demonstrated to handle four modalities of shared information effectively, and is robust to test-time situations where information from one or more modalities is missing. There remains room for improvement. Specifically, the speech modality is harder to handle. \Cref{fig:3d-tsne} shows that although the relative position of instances are correct in the speech space, the distinction and clustering of different objects are not as good as the other three modalities.
 
-However, there is still room for improvement. Specifically, the speech modality is harder to handle. \Cref{fig:3d-tsne} shows that although the relative position of instances are correct in the speech space, the distinction and clustering of different objects are not as good as the other three modalities.
+Text seems to be the best clustered modality, and that makes sense because the variation in written text is much smaller than the other three modalities. Variation in speech is higher because there are a number of factors affecting speech understanding, including different accents, native language, gender, and age~\citep{KebeAAAI2022}. Variation in RGB and depth is higher than in text due to variations in lighting conditions, an object's texture and shape, the angle of the camera, and other factors.
 
-Text seems to be the best clustered modality, and that makes sense because the variation in written text is much smaller than the other three modalities. Variation in speech is higher because of different accents, native language, gender, age, and etc., variation in RGB and depth is higher than text because of lightning conditions, object's texture and shape, the angle of camera, and other factors.
-
-\begin{figure}[h!]
-\centering
-\includegraphics[width=1\columnwidth]{Figures/example-rankings.pdf}
-\caption{\ours{} more accurately ranks objects and handles ambiguities with respect to a retrieval query compared to \supcon{}. Note that the phrase ``light blue'' in the query is very similar to ``light bulb'' and while \supcon{} confuses this and predicts light bulb as the correct object, \ours{} correctly identifies can opener as the intended object, and light bulb is ranked as the second object.
-}
-\label{fig:rankings}
-\end{figure}
-
-An example of the need to consider multiple modalities jointly is shown in \cref{fig:rankings}, showing how EMMA is able to correctly select an object instance from several similarly shaped and describable objects. 
 
 %===================================================================
 
@@ -796,7 +746,7 @@ An example of the need to consider multiple modalities jointly is shown in \cref
 
 In this work, we have demonstrated the effectiveness of a novel approach to learning from high-dimensional multimodal information even when one or more modalities is unavailable at test time. Our approach performs well on an object retrieval task from a testbed that contains four separate modalities, consistent with information that might be available to a physical agent, and outperforms state of the art contrastive learning approaches. 
 Our proposed method is general enough to be applied to a variety of multimodal retrieval problems, and is not limited to purely language-based image retrieval.
-\todokdinline{Don't we need evidence for that?}
+% \todokdinline{Don't we need evidence for that?}
 
 In future, this work will be extended to solve less clearly delineated problems; for example, differentiating among members of a class, as well as across classes. However, this work represents a significant step towards handling such retrieval problems, while not arbitrarily limiting the number of sensor and other modalities that can be incorporated. 
 
@@ -813,7 +763,8 @@ In future, this work will be extended to solve less clearly delineated problems;
 \bibliographystyle{tmlr}
 
 \appendix
-\section{Appendix}
 \label{sec:appendix}
+% \todocmi{should we get rid of this appendix? I am thinking so.}
+% \input{appendix}
 
 \end{document}

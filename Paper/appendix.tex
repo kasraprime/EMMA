@@ -1,165 +1,140 @@
 
-\section{Qualitative Analysis}
-\section{Approach}
-
-For $M$ modalities, we define a distance based loss function which is a generalization of well-known similarity-based metric learning and manifold alignment methods such as triplet loss~\cite{Carvalho-cooking-triplet,triplet_loss_2021_CVPR}, quadruplet loss~\cite{chen2017beyond}, and is similar to contrastive loss under some settings.
-We sample two data points from each modality, one positive point and one negative point. 
-For each set of positive data points (referring to an instance of an object with all of its modalities), we choose a set of negative data points either based on object class name, or by semantic negative sampling~\cite{Pillai_Matuszek_2018}. We now have two data points; we consider the first one as positive, and the second one as negative. However, the anchor won't be another data point as it is in the triplet loss terminology. Instead we choose one domain as an anchor. 
-
-\begin{itemize}
-    % \item data point: a row in the csv/tsv file.
-    \item Positive: a set of embeddings of the one data point (RGB image of an apple, corresponding depth image, text description, and speech description of the same apple)
-    \item Negative: a set of embeddings of the another data point of a different object (RGB image of a book, corresponding depth image, text description, and speech description of the same book)
-    \item Anchor: A fixed modality to act as anchor in the case of simple MMA loss, where we don't minimize the distance between the pair of embeddings from all modalities of the same data point, and we don't maximize the distance between positive an negative datapoints of the same modality.
-\end{itemize}
-
-The objective is then to (I) minimize the distance between each pair of positive points from heterogeneous modalities which results in $(M-1)!$ terms, (II) maximize the distance between each pair of positive and negative points from heterogeneous modalities which contains $(M-1)!$ terms again, and (III) maximize the distance between each pair of positive and negative points from the homogeneous modalities which contains $M$ terms. Altogether, our proposed loss function contains $M+2(M-1)!$ terms.
-\Cref{eq:objective} shows the objective function we defined above with changing maximization to minimization by changing the sign.
-
-% \begin{equation}\label{eq:objective-detailed}
-%     \min \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} ||x_{i}^{+} - x_{j}^{+}|| - \sum_{i=1}^{M-1} \sum_{j=i+1}^{N} ||x_{i}^{+} - x_{j}^{-}|| - 
-%     \sum_{i=1}^{M} ||x_{i}^{+} - x_{i}^{-}||
-% \end{equation}
+\section{Loss Function Development Story}
 
 
-% \begin{equation}\label{eq:objective}
-% \begin{split}
-%     \mathcal{L}  &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} ||f_i(x_{i}^{+}) - f_j(x_{j}^{+})|| \\
-%     & - ||f_i(x_{i}^{+}) - f_j(x_{j}^{-})||
-%     - ||f_i(x_{i}^{-}) - f_j(x_{j}^{+})|| \\
-%     & - \sum_{i=1}^{M} ||f_i(x_{i}^{+}) - f_i(x_{i}^{-}) ||
-% \end{split}
-% \end{equation}
-% where $f_i(.)$ and $f_j(.)$ represent functions that map input data to the shared latent space using a deep neural network.
-
-
-% d(,) notation instead of || - ||
-% \begin{equation}\label{eq:objective}
-% \begin{split}
-%     \mathcal{L}  &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} d(z_{i}^{+}, z_{j}^{+}) 
-%      - d(z_{i}^{+}, z_{j}^{-}) \\ 
-%     & - d(z_{i}^{-}, z_{j}^{+}) - \sum_{i=1}^{M} d(z_{i}^{+}, z_{i}^{-})
-% \end{split}
-% \end{equation}
-
+Our proposed \geom{} loss function can be rewritten as shown in \cref{eq:objective}.
 \begin{equation}\label{eq:objective}
 \begin{split}
-    \mathcal{L}  &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} ||z_{i}^{+} - z_{j}^{+}|| 
-     - ||z_{i}^{+} - z_{j}^{-}|| - ||z_{i}^{-} - z_{j}^{+}|| \\ 
-    &  - \sum_{i=1}^{M} ||z_{i}^{+} - z_{i}^{-} ||
+    \mathcal{L}  &= \sum_{i=1}^{M-1} \sum_{j=i+1}^{M} dist( z_{i}^{+} , z_{j}^{+}) 
+     - dist( z_{i}^{+} , z_{j}^{-}) - dist( z_{i}^{-} , z_{j}^{+}) - \sum_{i=1}^{M} dist( z_{i}^{+} , z_{i}^{-} )
 \end{split}
 \end{equation}
-where the subscripts $i$ and $j$ represent modalities, and $z$ is the embedding we get by applying a mapping function $f$ which in our case is a neural network on our input data. In other words $z_m = f_m(x_m)$ where each modality $m$ has a specific model $f_m$ that is different from the models for other modalities and these models do not share their weights. 
-To measure the distance, we use cosine distance.
+
+
+We designed and experimented with alternative versions of our \geom{} loss function to analyze if they offer better results.
+We start with a modification of the triplet loss function idea where we fix one modality as anchor and do not sample a positive instance from the same modality. 
+Na\"ively, to extend triplet loss to work with arbitrary number of modalities, we can use two anchors (e.g., text and speech), which results in $2(M-2)$ triplet losses as formulated in~\cref{eq:objective-two-anchors}. 
+
+% \todoffinline{in this equation block, you're writing things like $|| z_{t}^{+} - z_{m}^{+} ||$. Do you actually mean norm, or would any old scoring function work?}
+
+\begin{equation}
+\label{eq:objective-two-anchors}
+\begin{split}
+    \mathcal{L}  &= \sum_{m=1}^{M-2} dist( z_{t}^{+} , z_{m}^{+} ) - dist( z_{t}^{+} , z_{m}^{-} ) + dist( z_{s}^{+} , z_{m}^{+} ) - dist( z_{s}^{+} , z_{m}^{-} ) \\
+    &= \sum_{m=1}^{M-2} \cos(z_{t}^{+} ,z_{m}^{-}) - \cos(z_{t}^{+}, z_{m}^{+}) + \cos(z_{s}^{+} ,z_{m}^{-}) - \cos(z_{s}^{+}, z_{m}^{+})
+\end{split}
+\end{equation}
+where $M$ is the number of modalities, $t$ represents text modality, $s$ represents speech modality, and the superscripts $+$ and $-$ represent positive and negative objects, respectively.
+The $\cos(\cdot)$ function is a measure of similarity, not distance, and that is why the signs are reversed. To measure the distance, we use cosine distance.
 In order to use cosine \textit{distance}, we have to subtract the cosine of the \textit{angle} between two embeddings (which represents similarity) from 1: $1 - \cos(e_1, e_2)$.
 
-\todokdinline{I can add another term for minimizing the distance between similar pairs (anchor and positive) from the same domain. This would look like the equation below. However, it breaks the nice procedure of sampling two data points per modality}
-\todo{Edward wonders if $f_i(x)$ should instead produce $\mu_x$ and $\Sigma_x$, to capture uncertainty of embedding location, when working with so many modalities? (e.g., not all modalities share the same ambiguities)}
-\todo{Does Edward mean the actual network produces $\Sigma_x$, e.g., something like a VAE? How would uncertainty be applied to the inference problem?}
-$+ \sum_{i=1}^{M} ||f_i(x_i^{a}) - f_i(x_i^{+})||$
+However, this approach performs poorly when one of the anchor modalities is ablated; since there is no explicit minimization between the two anchors, text (t) and speech (s) do not necessarily map closely to each other, such that only one of the two anchors is actually learned. 
 
 
-If $M=2$ which means the number of modalities is 2, then our objective function reduces to the quadruplet loss method~\cite{chen2017beyond} if we ignore the third term, and negative samples for each modality do not belong to the same class.
-If $M=2$ and we ignore the last two terms in the objective function, it results in the triplet loss method. 
-If $M=1$, only the last term remains in the loss function which is exactly the pairwise distance-based loss function.
 
 
-We demonstrate performance using three different distance-based loss functions.
-\todokdinline{Either remove it or experiment with all versions of MMA (12 terms, 9 terms, and explicit anchor maximization}
 
-\subsection{Simple MMA}
-\label{sub:simple-mma}
-Our first proposed loss function is a modification of the triplet loss function idea, and can be derived from \cref{eq:objective} by fixing one modality as anchor, and ignoring the last two terms in \cref{eq:objective}.
-
-% For each data point (referring to an instance of an object with all of its modalities), we choose a negative data point either based on object class name, or by semantic negative sampling~\cite{Pillai_Matuszek_2018}. We now have two data points; we consider the first one as positive, and the second one as negative. However, the anchor won't be another data point as it is in the triplet loss terminology. Instead we choose one domain as an anchor. 
-
-% \begin{itemize}
-%     % \item data point: a row in the csv/tsv file.
-%     \item Positive: a set of embeddings of the one data point (RGB image of an apple, depth image of an apple, language description of an apple)
-%     \item Negative: a set of embeddings of the another data point of a different object (RGB image of a book, depth image of a book, language description of a book)
-%     \item Anchor: A fixed modality to act as anchor in the case of simple MMA loss, where we don't minimize the distance between the pair of embeddings from all modalities of the same data point, and we don't maximize the distance between positive an negative datapoints of the same modality.
-% \end{itemize}
-
-Since the downstream task in the grounded language learning domain is to predict/retrieve a desired object among multiple objects given a natural language description, it makes sense to train the model using language as an anchor, and in fact anchoring learning around language outperforms anchoring on RGB.
-
-\Cref{eq:objective-simple-mma} shows the mathematical formulation of the proposed loss function which can be generalized to arbitrary number of modalities.
-
-% \begin{equation}
-% \label{eq:objective-simple-mma}
-% \begin{split}
-%     \mathcal{L}  &= \sum_{m=1}^{M-1} || f_a(x_{a}^{+}) - f_m(x_{m}^{+}) || - \\ 
-%     & || f_a(x_{a}^{+}) -f_m(x_{m}^{-}) || 
-%     \\
-%     &= \sum_{m=1}^{M-1} 1 - \cos(f_a(x_{a}^{+}), f_m(x_{m}^{+})) \\ & - (1 - \cos(f_a(x_{a}^{+}) ,f_m(x_{m}^{-}))) \\
-%     &= \sum_{m=1}^{M-1} \cos(f_a(x_{a}^{+}) ,f_m(x_{m}^{-})) \\ 
-%     & - \cos(f_a(x_{a}^{+}), f_m(x_{m}^{+}))
-% \end{split}
-% \end{equation}
+An alternative is to apply triplet loss $M-1$ times with a single fixed anchor (text in our case) and $M-1$ `target' modalities.  In this case, the negative anchor point is disregarded. The positive anchor is used as an anchor for all $M-1$ triplet losses, and for each of those triplet losses the positive and negative points are simply selected from the corresponding modalities. This can be derived from \cref{eq:full-emma} by fixing one modality as anchor, and excluding the distance between the positive and negative anchors or $\cos(z_{a}^{+}, z_{a}^{-})$.
+\Cref{eq:objective-simple-mma} formulates this idea.
 
 \begin{equation}
 \label{eq:objective-simple-mma}
 \begin{split}
-    \mathcal{L}  &= \sum_{m=1}^{M-1} || z_{a}^{+} - z_{m}^{+} || - || z_{a}^{+} - z_{m}^{-} || \\
+    \mathcal{L}  &= \sum_{m=1}^{M-1} dist( z_{a}^{+} , z_{m}^{+} ) - dist( z_{a}^{+} , z_{m}^{-} ) \\
     &= \sum_{m=1}^{M-1} 1 - \cos(z_{a}^{+}, z_{m}^{+}) - (1 - \cos(z_{a}^{+}, z_{m}^{-})) \\
     &= \sum_{m=1}^{M-1} \cos(z_{a}^{+} ,z_{m}^{-}) - \cos(z_{a}^{+}, z_{m}^{+})
 \end{split}
 \end{equation}
+Here, subscript $a$ represents the \textit{anchor} modality, $M$ is the number of modalities, superscript $+$ represents the positive objects, and superscript $-$ represents the negative objects.
 
-where subscript $a$ represents \textit{anchor} modality, $M$ is the number of modalities, superscript $+$ represents the positive objects, and superscript $-$ represents the negative objects.
+However, this approach fails to take into account the dissimilarity of the positive and negative anchor points. This is an important piece of information that \cref{eq:objective-simple-mma} ignores. Although this information is implicitly captured when we maximize the distance between positive anchor and other negative modalities, when the negative data point becomes a positive example itself, the anchor and those points are forced to be closer to each other which can happen in three ways: either moving anchor closer to those points, moving those points closer to anchor, or move both somewhere in between. Therefore, in the last two cases we do not have explicit direct control over the distance between these points and previous positive points. Our experimental results confirm this hypothesis.
 
-An illustration of this loss function is provided in \cref{fig:simple-mma-loss}.
+Therefore, we add an extra term which is responsible for maximizing the distance between positive and negative instances of the anchor modality, because a margin between positive and negative points from other modalities (excluding anchor) is enforced. This can be derived from \cref{eq:full-emma} by fixing one modality as anchor.
+% The first dashed line from the top in \cref{fig:emma-loss} is this extra term that captures the dissimilarity between positive and negative text datapoints.
+We formulate this method in \cref{eq:objective-explicit-fixed-anchor}, which is generalized to an arbitrary number of modalities.
 
-\begin{figure}[tb]
-\centering
-\includegraphics[width=\columnwidth]{Figures/simple-MMA.pdf}
-\caption{A high-level prototype of the distances used in the simple MMA loss with 3 modalities. Orange arrows indicate maximizing the distance, blue arrows indicate minimizing the distance, and green lines show the margin. Depth images are brightened to be visible. \todo[inline]{We need to show speech as the 4th modality as well.}}
-\label{fig:simple-mma-loss}
-\end{figure}
-
-This version of MMA loss function can be seen as a contrastive loss usually used in the domain of self-supervised learning~\cite{chen2020simple}. However, our proposed loss function has two advantages over the traditional contrastive loss expressed in \cref{eq:contrastive-loss}. The first advantage is that our loss function do not loop over multiple positives and negatives in a large batch. Instead we sample only two objects (positive and negative) each of which have $M$ modalities which gives us $2M$ datapoints (or embeddings). Hence, our model can be trained using smaller batch sizes and reduces the number of negative samples we need. The second advantage is that this loss function can be used in a multimodal setting with an arbitrary number of modalities, and is not limited to a single data type (e.g. RGB images) which is the most common usage of contrastive loss~\cite{chen2020simple, NEURIPS2020_supervised_contrastive}.
-
-
-Therefore, our proposed loss function would modify \cref{eq:contrastive-loss} to the loss function formulated in \cref{eq:simple-MMA-contrastive}. Our formulation is a generalized version of the contrastive loss where $M$ is the number of modalities (e.g. RGB image, depth image, speech, text), but it can be the ``augmented views'' instead of different modalities.
-
-% \begin{equation}\label{eq:simple-MMA-contrastive}
-%     -\sum_{m=1}^{M-1} \log \frac{\exp (sim(f_a(x_a^+) , f_m(x_{m}^{+})/ \tau) )}{ \exp (sim(f_a(x_a^+) , f_m(x_{m}^{+}) / \tau)) + \exp (sim(f_a(x_a^+), f_m(x_{m}^{-}) / \tau))}
-% \end{equation}
-
-\begin{equation}\label{eq:simple-MMA-contrastive}
-    -\sum_{m=1}^{M-1} \log \frac{\exp (sim(z_a^+ , z_{m}^{+})/ \tau) }{ \exp (sim(z_a^+ , z_{m}^{+}) / \tau) + \exp (sim(z_a^+, z_{m}^{-}) / \tau)}
+\begin{equation}
+\label{eq:objective-explicit-fixed-anchor}
+\begin{split}
+    \mathcal{L}  %&= %\sum_{m=1}^{M-1} || z_{a}^{+} - z_{m}^{+} || - || z_{a}^{+} - z_{m}^{-} ||  - || z_{a}^{+} - z_{a}^{-} || \\
+    &= \max(\cos(z_{a}^{+}, z_{a}^{-}) + \alpha_a, 0) + \sum_{m=1}^{M-1} \max \left(\cos(z_{a}^{+} ,z_{m}^{-}) - \cos(z_{a}^{+}, z_{m}^{+}) + \alpha_m, 0 \right) \\  
+    &= \sum_{m=1}^{M}  \cos(z_{a}^{+} ,z_{m}^{-}) - \sum_{m=1}^{M-1} \cos(z_{a}^{+}, z_{m}^{+})
+\end{split}
 \end{equation}
-where $z = f(x)$.
-
-% \todokdinline{I should run the traditional contrastive loss to see if my method works better to make this claim.}
 
 
+In \cref{eq:objective-explicit-fixed-anchor}, $a$ represents the \textit{anchor} modality, $M$ is the number of modalities, the superscripts $+$ and $-$ represent positive and negative objects, $\alpha_m$ represents enforced margin for each modality which we set to 0.4 for all modalities without tuning, and $z$ is the embedding we get by applying a mapping function $f$, which in our case is a neural network on our input data.
+In other words, $z_m = f_m(x_m)$, where each modality $m$ has a specific model $f_m$ that is different from the models for other modalities. These models do not share their weights.
 
-% \subsubsection{All in loss with 12 terms}
-% \subsubsection{subset of All in loss with 9 terms}
+Since the downstream task we are considering in the grounded language learning domain is to predict/retrieve a desired object among multiple objects given a natural language description, it makes sense to train the model using language as an anchor, and in fact anchoring learning around language outperforms anchoring on RGB. However, our proposed \geom{} loss function formulated in \cref{eq:full-emma} where we treat all modalities as anchor once still results in a better performance.
 
-\section{Data}
 
-\begin{figure*}[tbh]
+% Triplet loss cannot be used for more than 2 modalities. Some previous work has concatenated RGB and depth embeddings to create a single ``vision'' embedding for learning~\cite{triplet_loss_2021_CVPR}, but they cannot handle RGB or depth sensor ablation during test. Since our method can handle any number of modalities, we can handle such a case by treating depth as a separate modality.
+% Moreover, when using triplet loss with different anchors per batch, the batch size has to be 1 which makes training very slow.
+
+% This approach is most similar to that of supervised contrastive learning~\cite{NEURIPS2020_supervised_contrastive}, but outperforms both that and regular contrastive learning~\cite{chen2020simple} methods.
+% Especially when modalities are ablated, most notably written language.
+
+% We find that the use of instance level losses grounded to one key modality (text) is sufficient to encourage a representation that satisfies our goals. 
+
+
+
+
+
+
+\subsection{Extended Triplet}
+Using an extended version of triplet loss to consider all pairwise connections which is formulated in \cref{eq:extended-triplet}, results in a worse performance.
+
+\begin{equation}\label{eq:extended-triplet}
+    L = \sum_{m_1=1}^{M} \left[ \sum_{m_2=m_1+1}^{M} \left[ \text{triplet}(z_{m_1}^{+}, z_{m_2}^{+}, z_{m_2}^{-}) + \text{triplet}(z_{m_1}^{-}, z_{m_2}^{-}, z_{m_2}^{+}) \right] + \cos(z_{m_1}^{+}, z_{m_1}^{-}) -1 + margin \right]
+\end{equation}
+
+% Didn't change much when we drop text: Full eMMA when we have similar objects 
+
+% Did not work: Run the version with all connections (including among negatives) without triplet and just by using cosine distance between pair of embeddings
+
+
+
+\subsection{Smaller Batch Sizes And Pulling Among Negatives}
+
+Reducing the batch size from 64 to 16 and 8 (for both \ours{} and \supcon{}) increases the gap between our model and the baseline in cases where our model beats the baseline (all modalities, dropping speech), but baseline is still better than ours when we drop the text modality.
+
+In batch size of 2 the trend is still the same, but when we drop the text modality, the MRR graph is flat at 0.4. This is still better than the worst and random cases, but it implies that the model does not learn anything with regards to speech.
+To remedy this, we add connections among the modalities of the negative instance as formulated in \cref{eq:full-emma-pull-negatives} and as shown in \cref{fig:full-emma-pull-negatives}, and that solves the flatline problem when we drop the text modality; however, when we have all modalities it performs worse than \ours{}.
+
+\begin{equation}\label{eq:full-emma-pull-negatives}
+\begin{split}
+    L = & \sum_{m_1=1}^{M} \left[ \sum_{m_2=1}^{M} \left[ \max (\cos(z_{m_1}^{+}, z_{m_2}^{-}) -1 + margin,0) \right] + \sum_{m_3=m_1+1}^{M} \left[ \max(1 - \cos(z_{m_1}^{+},z_{m_3}^{+}),0) \right] \right. \\
+    & \left. + \sum_{m_3=m_1+1}^{M} \left[ \max(1 - \cos(z_{m_1}^{-},z_{m_3}^{-}),0) \right] \right]
+\end{split}
+\end{equation}
+
+\begin{figure*}[tb]
 \centering
-\includegraphics[width=2.0\columnwidth]{Figures/raw-mask-test-mrr.pdf}
-\caption{Mean Reciprocal Rank (MRR) on different versions of GoLD dataset~\cite{GoLD_UMBC}. The raw version is depicted in green and masked version is depicted in orange averaged over 3 different random seeds. Higher is better.}
-\label{fig:mask-vs-raw}
+\includegraphics[width=1\columnwidth]{Figures/unused/full-emma-pull-negatives.pdf}
+\caption{A high-level prototype of our approach and the distances used when we have add pulling among negative modalities.}
+\label{fig:full-emma-pull-negatives}
 \end{figure*}
 
-\section{Experiments}
+
+
+\subsection{Margin}
+% \todokdinline{Try different margins of 0.6, 1.0, and if it improved the results we can try to learn it as a parameter}
+% \todokdinline{Should we remove this section?}
+We experimented with two different margins values: a margin of 0.6 and a margin of 1.0. Using a margin of 0.6 does not change the performance much. However, it converges even faster. Using a margin of 1.0 (this is essentially just cosine similarity because we have $cos -1 + \text{margin}$) results in a worse performance when we have all modalities. 
+% The MRR is 0.8995 when margin is 1, while with a margin of 0.6 the MRR is 0.9176, and with a margin of 0.4 the MRR is 0.9198. If we drop the text modality, the MRR is 0.7923, 0.7913, and 0.6918 for margins of 0.4, 0.6, and 1.0 respectively.
+
+
+
+
 
 \section{Results}
+We find that using each modality as anchor results in a better performance compared to when we fix one modality as anchor. This difference is more significant when we test with all modalities. 
+% 
+While the performance of \supcon{} deteriorates as the batch size is reduced, our \geom{} stays the same when we have all modalities or when we drop speech. However, when we drop text, EMMA deteriorates with decreasing batch size, and with a batch size of 2 without pulling negatives, it flatlines. In this case (when batch size is 2 and text is dropped), pulling among negatives is important and results in a better performance.
 
-\begin{figure*}[tbh]
-\centering
-\includegraphics[width=2.1\columnwidth]{Figures/test.mrr.pdf}
-\caption{Mean Reciprocal Rank (MRR) of our proposed method against triplet loss method averaged over 3 different random seeds for a downstream task of object detection. The higher is better. Green is Supervised Contrastive Learning~\cite{NEURIPS2020_supervised_contrastive}, Pink represents our proposed simple MMA loss function without semantic negative sampling w/ SGD w/ adjusting learning rate, Purple is out method with semantic negative sampling, Blue is our method w/ semantic negative sampling w/ Adam and w/o adjusting learning rate, Red is vanilla contrastive loss with cosine, and orange represent the triplet loss. function~\cite{triplet_loss_2021_CVPR}.
-}
 
-\label{fig:simple-MMA-mrr}
-\end{figure*}
 
-\section{Setup}
 
-% \input{lit-search}
+
 

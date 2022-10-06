@@ -1,0 +1,182 @@
+\begin{table*}[tb]
+    \centering
+    \begin{subtable}[t]{1.00\textwidth}
+    \centering
+    \resizebox{.99\textwidth}{!}{
+    \csvautotabular{resultsMRR.csv}
+    }
+    \end{subtable}
+    \vskip\baselineskip
+    % \hfill
+    \begin{subtable}[t]{1.00\textwidth}
+    \centering
+    \resizebox{.99\textwidth}{!}{
+    \csvautotabular{resultsACC.csv}
+    }
+    \end{subtable}
+\end{table*}
+% \todocm{For Table 1 - change all mrr.xx to MRR \textit{xx} for consistency with eqn 8, and all acc.xx to Acc \textit{xx}---e.g., column headers should be 'MRR \textit{td}'. Also make sure the caption edits are correct.}
+% \todo[inline]{Make it two subtables, and remove MRR and Acc from the columns, and spell out sr, tsrd, and ...}
+
+
+
+% Automatic DataTool Method
+\DTLloaddb{resultsMRR}{resultsMRR.csv}
+\DTLloaddb{resultsACC}{resultsACC.csv}
+\begin{table}[]
+    \centering
+    \resizebox{1.0\textwidth}{!}{
+    \DTLdisplaydb{resultsMRR}
+    }
+    \resizebox{1.0\textwidth}{!}{
+    \DTLdisplaydb{resultsACC}
+    }
+    \caption{Caption}
+    \label{table:quantitative}
+\end{table}
+
+
+
+% Manually constructed table
+\begin{table*}[]
+\centering
+\resizebox{.97\textwidth}{!}{
+\begin{tabular}{lc|ll|lll}
+\multicolumn{1}{c}{} &  & \multicolumn{2}{c|}{\textbf{Accuracy}} & \multicolumn{3}{c}{\textbf{Mean Reciprocal Rank}} \\ \hline
+\multicolumn{1}{c|}{\textbf{Method}} & \textbf{Modalities} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Speech/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Text/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Speech/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c|}{\textbf{\begin{tabular}[c]{@{}c@{}}Text/RGB/\\ Depth\end{tabular}}} & \multicolumn{1}{c}{\textbf{\begin{tabular}[c]{@{}c@{}}Text/Speech/\\ RGB/Depth\end{tabular}}} \\ \hline
+\multicolumn{1}{l|}{EMMA} & TSRD & \multicolumn{1}{l|}{\textbf{0.65}$\pm$0.01} & 0.83$\pm$0.006 & \multicolumn{1}{l|}{\textbf{0.79}$\pm$0.002} & \multicolumn{1}{l|}{0.90$\pm$0.003} & 0.90$\pm$0.004 \\
+\multicolumn{1}{l|}{EMMA} & 3 & \multicolumn{1}{l|}{--} & 0.84$\pm$0.008 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.90$\pm$0.004} & -- \\
+\multicolumn{1}{l|}{\supcon{}} & TSRD & \multicolumn{1}{l|}{0.59$\pm$0.007} & 0.84$\pm$0.008 & \multicolumn{1}{l|}{0.75$\pm$0.004} & \multicolumn{1}{l|}{0.91$\pm$0.006} & 0.90$\pm$0.006 \\
+\multicolumn{1}{l|}{\supcon{}} & 3 & \multicolumn{1}{l|}{--} & 0.84$\pm$0.006 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.91$\pm$0.004} & -- \\
+\multicolumn{1}{l|}{Contrastive Cosine} & TSRD & \multicolumn{1}{l|}{0.40$\pm$0.153} & 0.83$\pm$0.006 & \multicolumn{1}{l|}{0.62$\pm$0.034} & \multicolumn{1}{l|}{0.90$\pm$0.004} & 0.89$\pm$0.005 \\
+\multicolumn{1}{l|}{Contrastive Cosine} & 3 & \multicolumn{1}{l|}{--} & 0.84$\pm$0.005 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.91$\pm$0.003} & -- \\
+\multicolumn{1}{l|}{\ours{}} & TSRD & \multicolumn{1}{l|}{--} & 0.83$\pm$0.008 & \multicolumn{1}{l|}{--} & \multicolumn{1}{l|}{0.90$\pm$0.005} & -- \\ \hline
+\end{tabular}
+}
+\caption{Average and standard deviation of accuracy and MRR over 3 runs with 3 different random seeds on a held-out test set. These results represent performance when no modalities are ablated, in which case supervised contrastive loss, contrastive loss, and EMMA perform similarly (``--'' is an ablated modality and can't be evaluated). All metrics are from 0 to 1, and higher is better. For 5 objects, a random guess would have MRR of 0.33, and the worst case performance would be always ranking the correct item last which gives us 0.2. All models are trained using text as anchor. The batch size is 64 and optimizer is SGD for all experiments except the triplet loss, where batch size is 1 and optimizer is Adam.
+%In the Triplet experiment, RGB and Depth embeddings are concatenated to form a single vision embedding since triplet loss cannot be used for more than two modalities.
+} 
+\label{table:quantitative}
+\end{table*}
+% \todo[inline]{This table is not referred to until sec:results, which is waaay down from where it's introduced, and it takes some parsing to figure out what's going on. Either add a paragraph under it that starts with something like "Table 1 shows high-level results, in which..." or just move the table to the results section.}
+
+
+
+
+% %Edward moved table above where refernced b/c LaTeX plays games with double-wide objects
+% \begin{table*}[bth]
+% \centering
+% \begin{tabular}{c|c|c|c|c|c|c}
+% \toprule
+% \textbf{Method} & \textbf{Modalities} & \textbf{acc.srd} & \textbf{acc.trd} & \textbf{MRR.srd} & \textbf{MRR.trd} & \textbf{MRR.tsrd} \\ %\hline
+% \midrule
+% EMMA (Text) & 4 & \textbf{0.65}$\pm$0.01 & 0.83$\pm$0.006 & \textbf{0.79}$\pm$0.002 & 0.90$\pm$0.003 & 0.90$\pm$0.004 \\
+% EMMA (Text) & 3 & - & 0.84$\pm$0.008 & - & 0.90$\pm$0.004 & - \\
+% % Simple MMA (Text)  & 3 & ?$\pm$? & ?$\pm$? & ? & ? \\
+% % Simple MMA (Text) & 4 & ?$\pm$? & ?$\pm$? & ? & ? \\
+% % Simple MMA (Speech) & 3 & ?$\pm$? & ?$\pm$? & ? & ?  \\
+% DONE Supervised Contrastive (Text)& 4 & 0.59$\pm$0.007 & 0.84$\pm$0.008 & 0.75$\pm$0.004 & 0.91$\pm$0.006 & 0.90$\pm$0.006  \\
+% TODO Supervised Contrastive (Text)& 3 & - & 0.84$\pm$0.006 & - & 0.91$\pm$0.004 & -\\
+% DONE Contrastive Cosine (Text) & 4 & 0.40$\pm$0.153 & 0.83$\pm$0.006 & 0.62$\pm$0.034  & 0.90$\pm$0.004 & 0.89$\pm$0.005\\
+% TODO Contrastive Cosine (Text) & 3 & - & 0.84$\pm$0.005 & -  & 0.91$\pm$0.003 & -\\
+% PROJ Triplet (Text) & 3 & - & 0.83$\pm$0.008 & - & 0.90$\pm$0.005 & -  \\
+% % DONE EMMA (Speech) & 3 & ?$\pm$? & ?$\pm$? & - & - \\
+% % DONE EMMA (Speech) & 4 & ?$\pm$? & ?$\pm$? & ? & ? \\
+% % DONE Supervised Contrastive (Speech)& 3 & ?$\pm$? & ?$\pm$? & - & -\\
+% % DONE Supervised Contrastive (Speech)& 4 & ?$\pm$? & ?$\pm$? & ? & ? \\
+% % TODO Contrastive Cosine (Speech) & 3 & ?$\pm$? & ?$\pm$?  & - & -\\
+% % TODO Contrastive Cosine (Speech) & 4 & ?$\pm$? & ?$\pm$?  & ? & ?\\
+% % DONE Triplet (Speech) & 3 & ?$\pm$? & ?$\pm$? & - & -  \\
+
+% % Full MMA (Text) w/ neg & 3 & ?$\pm$? & ?$\pm$? \\
+% % Simple MMA (Text) w/ neg Adam & 3  & 0.7949$\pm$? & 0.8778$\pm$? \\
+% % Simple MMA (Text) w/ neg SGD & 3 & 0.7905$\pm$? & 0.8821$\pm$? \\
+% % Triplet (Text) w/ neg & 3 & 0.7497$\pm$? & 0.8522$\pm$? \\
+% % Full MMA (Speech) w/ neg & 3 & ?$\pm$? & ?$\pm$? \\
+% % Simple MMA (Speech) w/ neg & 3 & 0.7949$\pm$? & 0.8778$\pm$? \\
+% % Contrastive Cosine (Text) w/ neg & 3 & 0.7894$\pm$? & 0.8788$\pm$?  & ? & ?\\
+% % Contrastive (Speech) w/ neg & 3 & ?$\pm$? & ?$\pm$? \\
+% % Triplet (Speech) w/ neg & 3 & 0.7497$\pm$? & 0.8522$\pm$? \\
+% \bottomrule
+% \end{tabular}
+% \caption{\label{table:quantitative}Average and standard deviation of accuracy and MRR over 3 runs with 3 different random seeds on a held-out test set. These results represent performance when no modalities are ablated, in which case supervised contrastive loss, contrastive loss, and EMMA perform similarly. All metrics are from 0 to 1, and higher is better. For 5 objects, a random guess would have MRR of 0.33, and the worst case performance would be always ranking the correct item last which gives us 0.2. All models are trained using text as anchor. The batch size is 64 and optimizer is SGD for all experiments except the triplet loss, where batch size is 1 and optimizer is Adam.
+% % \todokdinline{maybe adding results on cropped and raw dataset as well. Also results using object class instead of negative sampling}
+% }
+% \end{table*}
+
+
+
+
+
+method: Geometric, best mrr_ad ** avg: 0.7682305107526883 std: 0.0033724197709617586
+method: Geometric, best mrr_ar ** avg: 0.783393817204301 std: 0.002870980798921243
+method: Geometric, best mrr_ld ** avg: 0.8963622311827957 std: 0.0038165384708184025
+method: Geometric, best mrr_lr ** avg: 0.9112627688172041 std: 0.0073097134335746074
+method: Geometric, best mrr_lad ** avg: 0.8920712365591397 std: 0.004478468907650514
+method: Geometric, best mrr_lar ** avg: 0.9095463709677419 std: 0.008254095620938519
+method: Geometric, best mrr_ard ** avg: 0.7937331989247312 std: 0.002892081483060137
+method: Geometric, best mrr_lrd ** avg: 0.9229038978494624 std: 0.005072886474275548
+method: Geometric, best mrr_lard ** avg: 0.9214092741935485 std: 0.004504231901153245
+method: Geometric, best acc_ad ** avg: 0.6194758064516129 std: 0.005500153720300029
+method: Geometric, best acc_ar ** avg: 0.6434274193548386 std: 0.005332041933055135
+method: Geometric, best acc_ld ** avg: 0.8202822580645162 std: 0.0057175656281111785
+method: Geometric, best acc_lr ** avg: 0.8459677419354839 std: 0.010990399982684721
+method: Geometric, best acc_lad ** avg: 0.8108064516129032 std: 0.008065120945062159
+method: Geometric, best acc_lar ** avg: 0.8400000000000001 std: 0.014046271275059837
+method: Geometric, best acc_ard ** avg: 0.6583870967741936 std: 0.006289030057447286
+method: Geometric, best acc_lrd ** avg: 0.8641129032258064 std: 0.008277431297605348
+method: Geometric, best acc_lard ** avg: 0.8593548387096774 std: 0.007356633552926914
+method: SupCon, best mrr_ad ** avg: 0.7818461021505375 std: 0.0058056222339268986
+method: SupCon, best mrr_ar ** avg: 0.7968904569892473 std: 0.005438750540616555
+method: SupCon, best mrr_ld ** avg: 0.8903924731182796 std: 0.008784518487631803
+method: SupCon, best mrr_lr ** avg: 0.9056451612903225 std: 0.007443727195959732
+method: SupCon, best mrr_lad ** avg: 0.8875026881720431 std: 0.0065906156485880715
+method: SupCon, best mrr_lar ** avg: 0.9049993279569893 std: 0.006934618496482506
+method: SupCon, best mrr_ard ** avg: 0.8120443548387095 std: 0.0038831681475468686
+method: SupCon, best mrr_lrd ** avg: 0.919635752688172 std: 0.00421253081123992
+method: SupCon, best mrr_lard ** avg: 0.9202607526881721 std: 0.007036465744801571
+method: SupCon, best acc_ad ** avg: 0.6417338709677419 std: 0.009174605555378065
+method: SupCon, best acc_ar ** avg: 0.6652016129032258 std: 0.010682516325605402
+method: SupCon, best acc_ld ** avg: 0.8105241935483869 std: 0.012173413141473797
+method: SupCon, best acc_lr ** avg: 0.8364516129032259 std: 0.014036892078731987
+method: SupCon, best acc_lad ** avg: 0.8058467741935484 std: 0.011178885534336718
+method: SupCon, best acc_lar ** avg: 0.8354435483870969 std: 0.012324733809520844
+method: SupCon, best acc_ard ** avg: 0.6869758064516129 std: 0.006569735184573384
+method: SupCon, best acc_lrd ** avg: 0.8605645161290323 std: 0.012074307093137743
+method: SupCon, best acc_lard ** avg: 0.8581854838709677 std: 0.01293003766775218
+method: EMMA, best mrr_ad ** avg: 0.7763420698924731 std: 0.0029124808921936005
+method: EMMA, best mrr_ar ** avg: 0.786581317204301 std: 0.006418196740535436
+method: EMMA, best mrr_ld ** avg: 0.8986505376344086 std: 0.005024686589459191
+method: EMMA, best mrr_lr ** avg: 0.9125739247311827 std: 0.008583791522680621
+method: EMMA, best mrr_lad ** avg: 0.8966283602150538 std: 0.0036157579057873954
+method: EMMA, best mrr_lar ** avg: 0.9097157258064514 std: 0.00655691760402764
+method: EMMA, best mrr_ard ** avg: 0.8032096774193549 std: 0.004465339908648459
+method: EMMA, best mrr_lrd ** avg: 0.9270524193548388 std: 0.004950684287669308
+method: EMMA, best mrr_lard ** avg: 0.9272177419354838 std: 0.0046582728067974
+method: EMMA, best acc_ad ** avg: 0.6353629032258065 std: 0.00531983066789421
+method: EMMA, best acc_ar ** avg: 0.6506854838709677 std: 0.010086772331454559
+method: EMMA, best acc_ld ** avg: 0.8277822580645161 std: 0.009658415480510912
+method: EMMA, best acc_lr ** avg: 0.850725806451613 std: 0.014181056636432354
+method: EMMA, best acc_lad ** avg: 0.8216129032258064 std: 0.006363306949864157
+method: EMMA, best acc_lar ** avg: 0.8437096774193549 std: 0.012343847760054961
+method: EMMA, best acc_ard ** avg: 0.6768951612903227 std: 0.008115363892853094
+method: EMMA, best acc_lrd ** avg: 0.8737903225806452 std: 0.007140626974573769
+method: EMMA, best acc_lard ** avg: 0.8715322580645161 std: 0.007248425499130212
+method: Contrastive, best mrr_ad ** avg: 0.7174408602150538 std: 0.007255402799973243
+method: Contrastive, best mrr_ar ** avg: 0.7337029569892473 std: 0.0039224209303724234
+method: Contrastive, best mrr_ld ** avg: 0.8972479838709677 std: 0.005357753897962892
+method: Contrastive, best mrr_lr ** avg: 0.9082345430107527 std: 0.003749222854686774
+method: Contrastive, best mrr_lad ** avg: 0.8912668010752688 std: 0.006122357196224834
+method: Contrastive, best mrr_lar ** avg: 0.9026169354838709 std: 0.005789581070670862
+method: Contrastive, best mrr_ard ** avg: 0.7496478494623655 std: 0.004373982216482813
+method: Contrastive, best mrr_lrd ** avg: 0.9192137096774193 std: 0.00411868564896933
+method: Contrastive, best mrr_lard ** avg: 0.9171935483870965 std: 0.005344248282948013
+method: Contrastive, best acc_ad ** avg: 0.5482258064516129 std: 0.014024724525739987
+method: Contrastive, best acc_ar ** avg: 0.5727016129032259 std: 0.006437231955968572
+method: Contrastive, best acc_ld ** avg: 0.82875 std: 0.008802521869277298
+method: Contrastive, best acc_lr ** avg: 0.8434677419354838 std: 0.01012939823665928
+method: Contrastive, best acc_lad ** avg: 0.8155241935483872 std: 0.00933622313545278
+method: Contrastive, best acc_lar ** avg: 0.8326209677419355 std: 0.010162090342290321
+method: Contrastive, best acc_ard ** avg: 0.5938306451612902 std: 0.005993840056794196
+method: Contrastive, best acc_lrd ** avg: 0.8631048387096774 std: 0.006685527646846855
+method: Contrastive, best acc_lard ** avg: 0.8574999999999999 std: 0.008746747574507578
