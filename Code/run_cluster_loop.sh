@@ -19,8 +19,8 @@ do
 # for method in full-emma-pull-neg
 # for method in supcon-emma-pull-neg
 # for method in supcon-emma
-# for method in supcon-emma supcon
-for method in contrastive-org
+for method in supcon-emma supcon
+# for method in contrastive-org
 do
 # for modalities in lard lrd ard lar lad lr ld ar ad
 for modalities in lard
@@ -32,16 +32,7 @@ do
 # for candidate_constraint in unique_objects unique_instances
 for candidate_constraint in unique_objects
 do
-sbatch run_cluster.sh exp $method $modalities $batch_size $candidate_constraint $neg $dim $seed $task
-## sbatch run_cluster.sh 3M-contrastive-SGD-cosine-submodalities-text-anchor $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-contrastive-cosine-submodalities-text-anchor-similar-objects $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-contrastive-cosine-submodalities-text-anchor-unique-object $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-eMMA-cosine-submodalities-text-anchor-similar-objects $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-full-eMMA-SpeechRGB-cosine-distance-pull-neg-BS64-submodalities-unique-object $neg $dim $seed $task $method $modalities $batch_size
-# sbatch run_cluster.sh 4M-extended-triplet-eMMA-cosine-distance-submodalities-unique-object $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-supcon-SGD-normalize-BS2-submodalities-text-first-unique-objects $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-eMMA-BCE-temperature0.07-cosine-distance-submodalities-unique-object $neg $dim $seed $task
-# sbatch run_cluster.sh 4M-supcon-SGD-cosine-submodalities-text-first-unique-object $neg $dim $seed $task
+sbatch run_cluster.sh exp-noisy-txt-varied $method $modalities $batch_size $candidate_constraint $neg $dim $seed $task
 done
 done
 done

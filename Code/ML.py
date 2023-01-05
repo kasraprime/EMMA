@@ -45,7 +45,13 @@ def train(config, models, dataset, device):
         results[epoch] = {}
         # do the training
         print('\ntraining for the new epoch')
+        if config.noise == 'text':
+            # Add noise to text modality to see how it affects EMMA and SupCon
+            original_lang = deepcopy(dataset['train'].dataset.language_embeddings_data)
+            dataset['train'].dataset.language_embeddings_data = [dataset['train'].dataset.language_embeddings_data[i]+np.random.randn(*dataset['train'].dataset.language_embeddings_data[i].shape).astype('f') if random.uniform(0, 1)<=0.5 else dataset['train'].dataset.language_embeddings_data[i] for i in range(len(dataset['train'].dataset.language_embeddings_data))]
         logs[epoch] = training(config, models, dataset, 'train', optimizers, epoch, criterion, device)
+        if config.noise == 'text':
+            dataset['train'].dataset.language_embeddings_data = original_lang
 
         # evaluation on valid and possibly test        
         for portion in config.portions:
@@ -156,6 +162,10 @@ def evaluate(config, models, dataset, portion):
         for batch_index, data in enumerate(dataset[portion]):
             for modality in models.keys():
                 model = models[modality]
+                if config.noise == 'text':
+                    # Add noise to text modality to see how it affects EMMA and SupCon
+                    if modality == 'language' and random.uniform(0, 1) <= 0.5:
+                        data[modality] = data[modality] + torch.randn(data[modality].size())
                 outputs[modality].append(model(data[modality], mode='eval')['decoded'].data.cpu().numpy())
             outputs['object_names'].extend(data['object'])
             outputs['instace_names'].extend(data['instance'])
@@ -334,6 +344,7 @@ def load_configs():
     parser.add_argument('--optimizer', default='SGD', type=str)
     parser.add_argument('--candidate_constraint', default='unique_instances', type=str)
     parser.add_argument('--metric_sample_size_similar', default=1, type=int)
+    parser.add_argument('--noise', default='clean', type=str)
     
     args = parser.parse_args()
     if args.method == 'supervised-contrastive':

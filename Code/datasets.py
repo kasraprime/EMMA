@@ -164,6 +164,7 @@ class GoLD_Dataset(Dataset):
         self.object_names_data = [self.object_names[i] for i in indicies_portion ]
         self.instance_names_data = [self.instance_names[i] for i in indicies_portion]
         self.language_embeddings_data = [self.language_embeddings[i] for i in indicies_portion]
+        # self.language_embeddings_data = [self.language_embeddings[i]+np.random.randn(*self.language_embeddings[i].shape).astype('f') if self.train=='train' and random.uniform(0, 1)<=0.5 else self.language_embeddings[i] for i in indicies_portion]
         self.rgb_embeddings_data = [self.rgb_embeddings[i] for i in indicies_portion]
         self.depth_embeddings_data = [self.depth_embeddings[i] for i in indicies_portion]
         self.audio_embeddings_data = [self.audio_embeddings[i] for i in indicies_portion]
