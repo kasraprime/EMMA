@@ -36,6 +36,7 @@
 \newcommand{\Rephrase}[1]{{\textbf {\color{red}Rephrase please #1}}}
 \newcommand{\TD}[1]{{\color{red}{\textbf{TODO}}} #1}
 \newcommand{\OK}[1]{{\color{green}{\textbf{DONE}}} #1}
+\newcommand{\DO}[1]{{\color{blue}{\textbf{PROG}}} #1}
 \newcommand{\ours}{\textsc{EMMA}}
 % \newcommand{\ours}{\textsc{EMMA}}
 \newcommand{\geom}{\textsc{Geometric Alignment}}
@@ -91,11 +92,70 @@
 
     % shorter version
     
-    We propose \textit{extended multimodal alignment (EMMA)}, a generalized geometric method combined with a cross-entropy loss function that can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data, compounded by the challenge of retrieval when a modality becomes unavailable. Our study is motivated by needs in robotics and computer-human interaction, where an agent has many sensors and thus modalities with which a human may interact, both to communicate a desired goal and for the agent to recognize a desired target object. For such problems, there has been little research on integrating more than two modalities. While there have been widely popular works on self-supervised contrastive learning based on cross-entropy, there is an entirely separate family of approaches based on explicit geometric alignment. However, to the best of our knowledge there has been no work on combining the two approaches for multimodal learning. We propose to combine both families of approaches and argue that the two are complementary. We demonstrate the usability of our model on a grounded language object retrieval scenario, where an intelligent agent has to select an object given an unconstrained language command. We leverage four modalities including vision, depth sensing, text, and speech, and we show that our model converges approximately 5 times faster than previous strong baselines, and out-performs or is strongly competitive with state-of-the-art contrastive learning. % (in 80\% less time).
+    Our study is motivated by needs in robotics and computer-human interaction, where an agent has many sensors and thus modalities with which a human may interact, both to communicate a desired goal and for the agent to recognize a desired target object. For such problems, there has been little research on integrating more than two modalities. While there have been widely popular works based on cross-entropy, there is an entirely separate family of approaches based on explicit geometric alignment known as contrastive learning. However, to the best of our knowledge there has been no work on combining the two approaches for multimodal learning. We propose to combine both families of approaches and argue that the two are complementary. We introduce \textit{extended multimodal alignment (EMMA)}, a geometric (distance-based) method combined with a contrastive loss function. Our method can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data, compounded by the challenge of retrieval when a modality becomes unavailable. We demonstrate the usability of our model on a grounded language object retrieval scenario, where an intelligent agent has to select an object given an unconstrained language command. We leverage four modalities including vision, depth sensing, text, and speech, and we show that our model converges approximately 5 times faster than previous strong baselines, and out-performs or is strongly competitive with state-of-the-art contrastive learning. % (in 80\% less time).
     %when modalities are ablated. 
+    %TODO: another baseline where we use cross-entropy loss only is missing I guess.
     The code is publicly available on GitHub and will be included for the camera-ready version (it is redacted for anonymity). 
 \end{abstract}
 
+
+
+\section{TODO}
+\begin{itemize}
+
+    \item \TD modify it for SIGIR
+    \item \TD EMMA as a contstrained optimization for Geometric portion to not satisfy it.
+    \item \TD constrained SupCon per instance modality constraints: for this particular anchor and corresponding neighbors, we want this constraint to be satisfied.
+    \item \OK Do you control for in batch negatives for supcon portion? Yes.
+    \item \TD alternate training of supcon and emma. E.g. train supcon for 50 epochs and emma for the next 50 epochs
+    \item \TD removing objects that have less than a number of instances? yes, but it's not a good story, since we want emma to work in low-data regime.
+    \item \TD ablating number of data points and have a graph based on different number of training data --> maybe EMMA degrades less than SupCon and that would be good
+    \item \TD use supcon portion to reweight the geometric values or use a method to have different scores for different pairs in the geometric loss. Targeting specific pair of embeddings.
+    \item \TD it seems to be a tension between geometric portion and the supcon loss
+    \item \OK another column for number of NAs in test and train and then correlation between them
+
+    \item \OK add another column for the number of instances and then compute correlation between that and the differential scores. Take the correlation between number of instances and each column (metric) and then the correlation and the average of columns.
+
+    \item listen to the speeches for NA descriptions and the ones where there is a significant difference in performance
+
+    \item \OK listen to the speeches for empty transcriptions.
+
+    \item \TD take a look at the depth images
+    
+    \item going forward we have two options: Improve the model, or do a deep analysis why our results are like this
+    
+    \item We could do something that addresses the "open questions" (which questions remain?)
+
+    I guess the main open question is the mixed results and the fact that they are within the std dev of each other. Basically, I think they are unsure whether being faster is a good result or not.
+    What the reader would take away?
+    
+    \item \DO What the rich analysis would consist of?
+
+    \item Why are we getting what we are getting?
+    
+    Visualize individual data points and what are the failure modes.
+    You can do the same for type by type (apples vs books)
+    The percent that EMMA got right and SupCon got wrong and vice versa.
+
+    have pictures, positive set and negative set,
+    and all modalities and then show scores for all of them.
+    
+    \item \TD Different datasets or tasks
+    \item \TD How can we tell when modalities are complementary?
+
+    I think they meant when loss functions are complementary, am I wrong?
+    
+    \item \TD How can we tell what losses to use in what cases?
+    
+    \item  \TD Why didn't our approach work better, and what can we do to improve it?
+    
+    One reason could be that \supcon{} considers the distance between all pairs of data points in a batch.
+    
+    \item What's the next thing to try or add?
+    
+    We could add a weighting term to balance the effect of \supcon{} and \geom{}.
+    
+\end{itemize}
 
 
 \section{Introduction}
@@ -115,7 +175,7 @@ However, despite the multisensory nature of object retrieval, much of the existi
 
 % \todo[inline]{Whats the name of our method? When I skim the paper its hard to tell what ``the new thing is'', and then I have to read. I think being explicit here, with something like ``\textit{we propose our new method BLA}'' will help -Ed}
 
-The ultimate aim of this work is to take arbitrary input modalities about novel objects, including both spoken and written language, and build a model that allows a system to correctly retrieve that object given a subset of those input modalities. In this work, we propose our new method \ours{}, a generalized geometric method combined with a cross-entropy loss function that can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data. We demonstrate steps towards this ultimate goal with a mechanism that learns quickly from a variety of input signals and is robust to ablation of certain inputs. This is a generalization of approaches to grounded language learning in which specific input modalities are labeled with language to allow for future identification, but explicitly seeks to be agnostic about the nature of the individual sensory and linguistic inputs. 
+The ultimate aim of this work is to take arbitrary input modalities about novel objects, including both spoken and written language, and build a model that allows a system to correctly retrieve that object given a subset of those input modalities. In this work, we propose our new method called \textit{extended multimodal alignment (\ours{})}, a generalized geometric method combined with a cross-entropy based supervised contrastive loss function~\cite{NEURIPS2020_supervised_contrastive}, which we abbreviate \supcon{}. Our method can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data. We demonstrate steps towards this ultimate goal with a mechanism that learns quickly from a variety of input signals and is robust to ablation of certain inputs. This is a generalization of approaches to grounded language learning in which specific input modalities are labeled with language to allow for future identification, but explicitly seeks to be agnostic about the nature of the individual sensory and linguistic inputs. 
 
 Our contributions are as follows:
 \begin{enumerate}
@@ -159,7 +219,7 @@ We highlight a key difference with recent work like \citet{10.1145/3397271.34012
 A number of different approaches have been proposed for linguistic-based alignment learning. \citet{alayrac2020self} use a self-supervised contrastive learning method to learn and combine representations from three modalities of visual, audio, and language. Audio and visual domains are mapped to the same space because they are fine-grained, containing dense information for each frame of video, and these embeddings are then mapped to a coarse space where text is also mapped. Their network respects specificity and comparability of different modalities. The loss function they define consists of two distance-based terms for the corresponding spaces, differing from ours in that they do not handle arbitrarily many modalities and do not focus on robustness in the face of modality drop-outs. \citet{Nguyen-RSS-20} take a similar approach and perform pairwise cosine similarity to align images and natural language text descriptions to perform object retrieval tasks. \citet{triplet_loss_2021_CVPR} take a cross-modal manifold alignment approach to grounded language learning using triplet loss \citep{Chechik:2010:LSO:1756006.1756042}, and perform object retrieval by connecting text descriptions of objects to their corresponding RGB-D images.
 
 In general there are two different families of approaches to multimodal learning in the literature. One family is based on classification and cross-entropy losses such as~\citet{NEURIPS2020_supervised_contrastive, chen2020simple} and the other family is geometric based such as~\citet{ICML22GeometricMultimodal,Carvalho-cooking-triplet,salvador2017cooking,triplet_loss_2021_CVPR}.
-In this paper we propose to marry the two families and show that combining geometric approach with cross-entropy method is superior.
+In this paper we propose to marry the two families and show that combining geometric approach with cross-entropy based \supcon{} loss function is superior.
 
 % \todokdinline{Should we move the following two paragraphs to the Approach section?}
 % \todocmi{Actually yes, although I think it's more like 3 paragraphs. Rewriting the subsequent paragraphs so they don't appear out of nowhere would help.}
@@ -211,6 +271,14 @@ Depending on which modalities are or are not ablated, we consider up to four dis
 
 In keeping with previous work on the closely related problem of image retrieval, we focus on contrastive loss approaches, in which the goal is to learn an embedding of data where similar samples---in our case, samples belonging to the same class of object---are embedded `close' to one another, while dissimilar samples are farther apart. We develop a novel geometric loss function, \geom{}, that simultaneously minimizes intra-class distances and maximizes inter-class distances across each pair of modalities, yielding a model that is both effective at the retrieval task defined above and robust to modality dropouts at test time. We take an additional step and combine this \geom{} loss with a classification-based (cross-entropy) loss function which results in a superior model compared to either of geometric or cross-entropy losses alone; we refer to this combination as Extended Multi-Modal Alignment, or \ours{}.
 
+\paragraph{Core Concepts}
+\label{sec:core-concepts}
+There is a shared terminology across the methods we describe in this section, but they differ in what they incorporate. We explain the high-level concepts here and clarify their use cases for each method in the corresponding sections.
+The three terms that are commonly used are \textit{anchor}, \textit{positive}, and \textit{negative}. Anchor refers to a data point that acts as a point of reference against which other data points are compared. Positive and negative refer to a data point or a set of data points that are similar and dissimilar to the anchor, respectively.
+% 
+For example, to learn the meaning of the concept ``book,'' the anchor might be an RGB image of a book; the corresponding text description and depth image of that book are included in the positive set; and the negative set includes the text description and RGB image of an apple.
+% 
+The methods we discuss here differ both in how they choose these three sets and the objective function they use.
 
 \subsection{Baselines}
 We compare both \ours{} and \geom{} against contrastive learning~\citep{chen2020simple} and supervised contrastive learning~\citep{NEURIPS2020_supervised_contrastive}, which for conciseness we refer to as \supcon{}.
@@ -287,10 +355,12 @@ While this model is a strong baseline, the authors applied it to a unimodal data
 
 Since \supcon{} considers all pairwise distances in each batch, with $M$ modalities and a batch of size $B$ each batch contains $B$x$M$ items, and \supcon{} computation involves $(BM)^2$ pairwise distance terms which is dependent on batch size. However, the computations of our \geom{} approach is agnostic with respect to batch size which makes it scalable.
 
+As originally proposed, the \supcon{} approach which we choose as our baseline was originally applied to unimodal datasets such as ImageNet~\cite{imagenet2009}, CIFAR-10~\cite{krizhevsky2009learning}, and CIFAR-100~\cite{krizhevsky2009learning}. We both demonstrate that it is possible to use on multimodal datasets and extend it with the addition of geometric approaches, which gives benefits on training speed and performance when modalities are dropped.
+
 \subsection{EMMA: Extended Multimodal Alignment}
 \label{sec:emma}
 
-Our proposed multimodal method is composed of two complementary parts. The first part is a geometric loss based on distances in the latent space, and the second part is a contrastive loss based on cross-entropy. The geometric loss is faster to learn while the cross-entropy method is more aligned with the downstream task of object retrieval. Hence we propose to combine them. 
+Our proposed multimodal method is composed of two complementary parts. The first part is a geometric loss based on distances in the latent space, and the second part is a supervised contrastive loss based on cross-entropy (\supcon{}). The geometric loss is faster to learn while the cross-entropy based \supcon{} loss is more aligned with the downstream task of object retrieval. Hence we propose to combine them. 
 
 \paragraph{Geometric Alignment Loss}
 \label{subsec:geom-loss}
@@ -307,7 +377,7 @@ Moreover, our method has the advantage that it does not require providing hard n
 Therefore, we modify the concept of triplet loss as follows. During training, we sample two different instances and their corresponding representations from all modalities into two sets---one positive set (referring to a specific object) and one negative set (referring to some different object) as shown in \cref{fig:emma-loss-trimmed}.
 Unlike some prior triplet loss methods~\citep{GoLD_UMBC,triplet_loss_2021_CVPR}, the anchor is not randomly chosen from different modalities in each batch. Instead, in our setting, every item in the positive set becomes anchor once, and we minimize the distance between that item and other items in the positive set, while minimizing the distance between that item and all items in the negative set. It can be seen as an one-to-many relationship instead of an one-to-two relationship in the triplet loss formulation.
 % the anchor and positive items are from the same object class, but in different modalities and each of the positives modalities becomes anchor once. 
-We consider the following terminology:
+To make the distinction between triplet loss and our proposed \geom{} more clear, we provide an example for the terminology we use.
 % \todokdinline{I feel like using the terminology of triplet loss especially \textbf{anchor} is confusing here or maybe it needs to be rephrased. We can alternatively say that we consider all pairwise distances.}
 % \todoffinline{I don't see the problem with anchor, but if you'd rather use a different term, what about query? As a note, while you do consider all pairwise distances but you treat some differently than others.}
 \begin{itemize}
@@ -408,7 +478,7 @@ $M(M-1)/2$ anchor-to-positive distance minimizations and $M^2$ anchor-to-negativ
 It is noteworthy that our training procedure does not perform any stochastic dropout of modalities to obtain test-time robustness to missing modalities. Moreover, our approach does not need to compute the distance between all items in the batch, as opposed to \supcon{}.
 % ~\citep{NEURIPS2020_supervised_contrastive}.
 
-\paragraph{Combining Geometric and Cross-Entropy Losses}
+\paragraph{Combining Geometric Loss and Cross-Entropy based \supcon{} Loss}
 \label{subsec:emma}
 
 The main difference between \geom{} and \supcon{} is that in \geom{} we focus on the geometric interpretation of similarity using cosine distances, while in \supcon{}, cosine distances are used to compute a classification-based loss function similar to cross-entropy.
@@ -446,6 +516,11 @@ In other words, the collection of embeddings indexed by $P(i,m)$ is $\{ \bigcup\
 % \end{equation}
 % \end{comment}
 % 
+Both the geometric alignment and cross-entropy portions of EMMA are designed to not anchor on any specific modality, but instead consider all available modalities. This geometric portion is in contrast to previous triplet-based approaches. To show this, we consider how the geometric portion of EMMA’s loss would apply to the example in Figure 2. Considering the apple (on the left) as instance i, the dotted lines connecting the embeddings of the apple’s modalities reflect minimizing the pairwise distances between the different modalities of i: in equation 8, we do this via the $h(x, y)$ function. The dashed lines connecting the representations of the apple to a not-apple (the coffee mug) reflect maximizing the distances between these embeddings (done via $g(x,y)$). Notice how in both cases we consider all relevant pairs.
+
+Although both \supcon{} and the \geom{} approaches are trying to bring target objects together (and push dissimilar ones away), there is a trade-off in \supcon{} where there is a normalized ranking across them. In contrast, in \geom{} distances can be arbitrarily near or far. Our approach tries to respect distinct modalities of each instance.
+While our formulation is similar to \supcon{} notationally, conceptually \supcon{} uses different augmentations of RGB images as positive examples (inherently coming from the same underlying empirical distribution), while we use different modalities drawn from different distributions. To the best of our knowledge our work is the first to use supervised contrastive learning for such a multimodal scenario, where the different language and sensor inputs provide more robust learning than can be accomplished with single sensor inputs, even augmented. 
+
 Compared to pure \supcon{}, combining these loss functions results in faster convergence and slightly improved performance when all modalities are available, and maintains improved performance when modalities are missing. Experimental results are presented in detail in \cref{sec:results}.
 
 % We discuss the geometric interpretation of our method versus the classification interpretation of SupCon method and advantages of each. Finally, we show that combining \geom{} with \supcon{} is superior to either the \geom{} approach or \supcon{} alone.
@@ -678,6 +753,8 @@ There is very little gap in performance when depth or RGB are dropped in \cref{f
 
 % \todocmi{Main remaining task is to sort out figures. They should all have meaningful y axis labels and essentially no whitespace surrounding them.}
 
+Our time analysis shows that EMMA takes almost 8 epochs to converge and each epoch takes roughly 0.7 minutes, which makes it 5.6 minutes until convergence, while \supcon{} takes about 36 epochs to converge and each epoch takes 0.52 minutes which amounts to 18.72 minutes. That is when we use all four modalities for training. When we ablate one or two modalities, the training takes less time.
+
 \paragraph{Qualitative Results}
 \label{sec:Qualitative}
 In order to help visualize the performance of learned embeddings, we consider projections of a randomly selected subset of classes of the high-dimensional learned embeddings into a 3-dimensional space using t-SNE~\citep{van2008tsne}, a dimensionality reduction technique to visualize high-dimensional data. T-SNE creates a probability distribution over pairs of high-dimensional data where similar pairs have a higher probability and dissimilar pairs have a lower probability. A similar probability distribution is also defined over pairs of data in the lower dimension (either 2D or 3D), and T-SNE minimizes the KL divergence between these two probability distributions.
@@ -733,9 +810,13 @@ An example of the need to consider multiple modalities jointly is shown in \cref
 
 
 \subsection{Discussion}
-Our proposed model performs well and learns fast, has been demonstrated to handle four modalities of shared information effectively, and is robust to test-time situations where information from one or more modalities is missing. There remains room for improvement. Specifically, the speech modality is harder to handle. \Cref{fig:3d-tsne} shows that although the relative position of instances are correct in the speech space, the distinction and clustering of different objects are not as good as the other three modalities.
+Our proposed model performs well and learns fast, has been demonstrated to handle four modalities of shared information effectively, and is robust to test-time situations where information from one or more modalities is missing. 
+The bottleneck for agents in different settings may differ, and training speed may not be critical in offline learning scenarios. However, since we usually need to finetune models for different tasks when it comes to transfer learning, the training speed becomes relevant.
+
+There remains room for improvement. Specifically, the speech modality is harder to handle. \Cref{fig:3d-tsne} shows that although the relative position of instances are correct in the speech space, the distinction and clustering of different objects are not as good as the other three modalities.
 
 Text seems to be the best clustered modality, and that makes sense because the variation in written text is much smaller than the other three modalities. Variation in speech is higher because there are a number of factors affecting speech understanding, including different accents, native language, gender, and age~\citep{KebeAAAI2022}. Variation in RGB and depth is higher than in text due to variations in lighting conditions, an object's texture and shape, the angle of the camera, and other factors.
+
 
 
 %===================================================================
