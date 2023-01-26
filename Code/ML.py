@@ -345,6 +345,8 @@ def load_configs():
     parser.add_argument('--candidate_constraint', default='unique_instances', type=str)
     parser.add_argument('--metric_sample_size_similar', default=1, type=int)
     parser.add_argument('--noise', default='clean', type=str)
+    parser.add_argument('--drop_train_data', default=0, type=float)
+    parser.add_argument('--drop_train_data_objects', default='objects', type=str, help='inputs are: objects, randomly')
     
     args = parser.parse_args()
     if args.method == 'supervised-contrastive':

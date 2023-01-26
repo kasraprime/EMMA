@@ -1,3 +1,4 @@
+from collections import Counter
 import random, os, pickle, json
 import pandas as pd
 import numpy as np
@@ -127,6 +128,7 @@ class GoLD_Dataset(Dataset):
 
         if config.split == 'view' and config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
             # Split in a way that each view is in 1 portion only, but the same instance with different views can be across multiple portions
+            print('splitting dataset based on unique views across train, valid, and test. Each view is only in one portion.')
             unique_views = list(set(zip(list(self.images),self.instance_names)))
             unique_views.sort()
             if config.task in ['gold', 'gold_raw', 'gold_cropped', 'gold_no_crop_old']:
@@ -144,6 +146,31 @@ class GoLD_Dataset(Dataset):
             views_train.append('onion_1_1')
             valid_indices = [idx for idx in range(len(self.images)) if self.images[idx] in views_valid]
             train_indices = [idx for idx in range(len(self.images)) if self.images[idx] in views_train]
+            if config.drop_train_data != 0:
+                print(f" dropping {config.drop_train_data} of training data ")
+                if config.drop_train_data_objects=='randomly':
+                    train_indices, dropped = train_test_split(train_indices, test_size=config.drop_train_data, random_state=config.random_seed)
+                elif config.drop_train_data_objects=='objects':
+                    objects_train = [self.object_names[idx] for idx in train_indices]
+                    # views_objects = list(zip(views_train, objects_train))
+                    indices_objects = list(zip(train_indices, objects_train))
+                    indices_objects = list(zip(*indices_objects))
+                    # Take care of single occurence objects:
+                    object_counts = dict(Counter(indices_objects[1]))
+                    obj_counts = list(zip(object_counts.keys(), object_counts.values()))
+                    counts = np.array(list(zip(*obj_counts))[1])
+                    keep_single_objects = np.array(obj_counts)[np.where(counts == 1)[0]][:,0]
+                    indices_objects = list(map(list,indices_objects))
+                    single_objects_indices = []
+                    for obj in keep_single_objects:
+                        single_objects_indices.append(indices_objects[0][indices_objects[1].index(obj)])
+                        indices_objects[0].remove(indices_objects[0][indices_objects[1].index(obj)])
+                        indices_objects[1].remove(obj)
+                    # End of taking care
+                    train_indices, dropped = train_test_split(indices_objects[0], test_size=config.drop_train_data, random_state=config.random_seed, stratify=indices_objects[1])
+                    train_indices.extend(single_objects_indices)
+                train_indices.sort()
+                
         elif config.split == 'flat' or config.task in ['RIVR', 'gauss_noise', 'dropout_noise', 'snp_noise', 'clean_normalized']:
             print('splitting dataset flatly across train, valid, and test')
             # spliting the dataset flat such that each description (each line of gold.tsv) appears in 1 portion only.
@@ -158,7 +185,7 @@ class GoLD_Dataset(Dataset):
             indicies_portion = valid_indices
         elif self.train == 'test':
             indicies_portion = test_indices
-        
+
         self.images_data = [self.images[i] for i in indicies_portion ]
         self.descriptions_data = [self.descriptions[i] for i in indicies_portion ]
         self.object_names_data = [self.object_names[i] for i in indicies_portion ]
