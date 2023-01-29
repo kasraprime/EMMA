@@ -7,11 +7,32 @@ import matplotlib.pyplot as plt
 import tikzplotlib
 
 
+# exp_ugly_names = {
+#     'Geometric': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'SupCon': 'exp-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'EMMA': 'exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'Contrastive': 'exp-contrastive-org-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+# }
+
 exp_ugly_names = {
-    'Geometric': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupCon': 'exp-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMA': 'exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'Contrastive': 'exp-contrastive-org-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupCon-25': 'exp-0.75-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCon-30': 'exp-0.70-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCon-35': 'exp-0.65-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCon-45': 'exp-0.55-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCon-50': 'exp-0.5-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCon-75': 'exp-0.25-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCon-100': 'exp-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'EMMA-25': 'exp-0.75-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMA-30': 'exp-0.70-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMA-35': 'exp-0.65-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMA-45': 'exp-0.55-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMA-50': 'exp-0.5-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMA-75': 'exp-0.25-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMA-100': 'exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'Geometric-25': 'exp-0.75-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometric-100': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 }
 
 
@@ -52,6 +73,8 @@ for method in experiments.keys():
     for seed in experiments[method].keys():
         res = json.load(open(experiments[method][seed]+'results.json'))
         del res['best']
+        if 'test-only' in res.keys():
+            del res['test-only']
         results[method][seed] = res
     results[method]['avg'] = {'best':{}}
     results[method]['std'] = {'best':{}}
@@ -131,12 +154,12 @@ result_acc.to_csv(path_or_buf=path+'resultsACC.csv', index=False)
 
 markers = ['P', '^', 's', 'o','v','<','>','8', 'p','*','h','H','D','d','X']
 styles = ['-',':','--','-.','|']
-styles_markers = ['-o', ':+', '-.^', '--s', '-.o', '-+', '--+', '-.+', ':o', '-v', '--v', '-.v']
+styles_markers = [':+', '-.^', '-o', '--s', '-.o', '-+', '--+', '-.+', ':o', '-v', '--v', '-.v']
+colors = ['tab:orange', 'tab:green', 'tab:blue', 'tab:red']
 # colors = {'f1': 'magenta', 'precision': 'red', 'recall':'blue'}
 
 
-
-name = 'epochs'
+name = 'epochs' #'converged-partial-train' # 'epochs' or 'converged-partial-train'
 portion = 'test'
 metric_correct_names = {
     'mrr_lrd': 'MRR speech ablated (trd)',
@@ -159,33 +182,71 @@ metric_correct_names = {
 # epochs.sort(key = int)
 # print(epochs)
 
-for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
-# for metr in ['mrr_ard']:
-    fig = plt.figure(figsize=(25,20))
-    ax = fig.add_subplot(1,1,1)
-    for method_idx, method in enumerate(results.keys()):
-        epochs = list(results[method]['avg'].keys())
-        plt.plot([str(epoch) for epoch in epochs if epoch != 'best'], [results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best'], styles_markers[method_idx], label=method, markersize=15)
-        low = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best']) - np.asarray([results[method]['std'][epoch][portion][metr] for epoch in epochs if epoch != 'best'])
-        high = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best']) + np.asarray([results[method]['std'][epoch][portion][metr] for epoch in epochs if epoch != 'best'])
-        plt.fill_between([str(epoch) for epoch in epochs if epoch != 'best'], low, high, alpha=0.2)
+if name == 'epochs':
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+    # for metr in ['mrr_ard']:
+        fig = plt.figure(figsize=(25,20))
+        ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results.keys()):
+            epochs = list(results[method]['avg'].keys())
+            plt.plot([str(epoch) for epoch in epochs if epoch != 'best'], [results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best'], styles_markers[method_idx], label=method, markersize=15)
+            low = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best']) - np.asarray([results[method]['std'][epoch][portion][metr] for epoch in epochs if epoch != 'best'])
+            high = np.asarray([results[method]['avg'][epoch][portion][metr] for epoch in epochs if epoch != 'best']) + np.asarray([results[method]['std'][epoch][portion][metr] for epoch in epochs if epoch != 'best'])
+            plt.fill_between([str(epoch) for epoch in epochs if epoch != 'best'], low, high, alpha=0.2)
 
-    # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
-    # ax.grid(True)
-    # ax.set_xlabel('Epoch', fontsize=40)
-    # ax.set_ylabel(metr, fontsize=40)
-    # plt.xticks(np.arange(0, len(list(results[method]['avg'].keys()))+1, 10), fontsize=30, rotation=90)
-    # plt.yticks(fontsize=30)
-    plt.grid(True)
-    plt.xlabel('Epoch', fontsize=40)
-    plt.ylabel(metric_correct_names[metr], fontsize=40)
-    plt.xscale("symlog", base=2)
-    plt.xticks(fontsize=30)
-    # plt.xticks([1, 5, 10, 50, 80, 100, 150, 190], fontsize=30)
-    plt.yticks(fontsize=30)
-    plt.legend(loc='lower right', fontsize=40, ncol=1)
-    # fig.legend(loc='lower right', fontsize=40, ncol=1)
-    plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+        # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
+        # ax.grid(True)
+        # ax.set_xlabel('Epoch', fontsize=40)
+        # ax.set_ylabel(metr, fontsize=40)
+        # plt.xticks(np.arange(0, len(list(results[method]['avg'].keys()))+1, 10), fontsize=30, rotation=90)
+        # plt.yticks(fontsize=30)
+        plt.grid(True)
+        plt.xlabel('Epoch', fontsize=40)
+        plt.ylabel(metric_correct_names[metr], fontsize=40)
+        plt.xscale("symlog", base=2)
+        plt.xticks(fontsize=30)
+        # plt.xticks([1, 5, 10, 50, 80, 100, 150, 190], fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.legend(loc='lower right', fontsize=40, ncol=1)
+        # fig.legend(loc='lower right', fontsize=40, ncol=1)
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+elif name == 'converged-partial-train':
+    results_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = results[method]
+
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        fig = plt.figure(figsize=(25,20))
+        ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results_converged.keys()):
+            percentages = list(results_converged[method].keys())
+            plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], styles_markers[method_idx], label=method, markersize=15, color=colors[method_idx])
+            low = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages]) - np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in percentages])
+            high = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages]) + np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in percentages])
+            plt.fill_between([str(percent) for percent in percentages], low, high, alpha=0.2, color=colors[method_idx])
+
+        # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
+        # ax.grid(True)
+        # ax.set_xlabel('Epoch', fontsize=40)
+        # ax.set_ylabel(metr, fontsize=40)
+        # plt.xticks(np.arange(0, len(list(results[method]['avg'].keys()))+1, 10), fontsize=30, rotation=90)
+        # plt.yticks(fontsize=30)
+        plt.grid(True)
+        plt.xlabel('Percentage of Training Data Used', fontsize=40)
+        plt.ylabel(metric_correct_names[metr], fontsize=40)
+        # plt.xscale("symlog", base=2)
+        plt.xticks(fontsize=30)
+        # plt.xticks([1, 5, 10, 50, 80, 100, 150, 190], fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.legend(loc='lower right', fontsize=40, ncol=1)
+        # fig.legend(loc='lower right', fontsize=40, ncol=1)
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
 
 # Frank's request
 for method_idx, method in enumerate(results.keys()):
