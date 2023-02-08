@@ -1,0 +1,318 @@
+%%
+%% This is file `sample-manuscript.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% samples.dtx  (with options: `manuscript')
+%% 
+%% IMPORTANT NOTICE:
+%% 
+%% For the copyright see the source file.
+%% 
+%% Any modified versions of this file must be renamed
+%% with new filenames distinct from sample-manuscript.tex.
+%% 
+%% For distribution of the original source see the terms
+%% for copying and modification in the file samples.dtx.
+%% 
+%% This generated file may be distributed as long as the
+%% original source files, as listed above, are part of the
+%% same distribution. (The sources need not necessarily be
+%% in the same archive or directory.)
+%%
+%% Commands for TeXCount
+%TC:macro \cite [option:text,text]
+%TC:macro \citep [option:text,text]
+%TC:macro \citet [option:text,text]
+%TC:envir table 0 1
+%TC:envir table* 0 1
+%TC:envir tabular [ignore] word
+%TC:envir displaymath 0 word
+%TC:envir math 0 word
+%TC:envir comment 0 0
+%%
+%%
+%% The first command in your LaTeX source must be the \documentclass command.
+%%%% Small single column format, used for CIE, CSUR, DTRAP, JACM, JDIQ, JEA, JERIC, JETC, PACMCGIT, TAAS, TACCESS, TACO, TALG, TALLIP (formerly TALIP), TCPS, TDSCI, TEAC, TECS, TELO, THRI, TIIS, TIOT, TISSEC, TIST, TKDD, TMIS, TOCE, TOCHI, TOCL, TOCS, TOCT, TODAES, TODS, TOIS, TOIT, TOMACS, TOMM (formerly TOMCCAP), TOMPECS, TOMS, TOPC, TOPLAS, TOPS, TOS, TOSEM, TOSN, TQC, TRETS, TSAS, TSC, TSLP, TWEB.
+% \documentclass[acmsmall]{acmart}
+
+%%%% Large single column format, used for IMWUT, JOCCH, PACMPL, POMACS, TAP, PACMHCI
+% \documentclass[acmlarge,screen]{acmart}
+
+%%%% Large double column format, used for TOG
+% \documentclass[acmtog, authorversion]{acmart}
+
+%%%% Generic manuscript mode, required for submission
+%%%% and peer review
+\documentclass[manuscript,screen,review]{acmart}
+%% Fonts used in the template cannot be substituted; margin 
+%% adjustments are not allowed.
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+%% Rights management information.  This information is sent to you
+%% when you complete the rights form.  These commands have SAMPLE
+%% values in them; it is your responsibility as an author to replace
+%% the commands and values with those provided to you when you
+%% complete the rights form.
+\setcopyright{acmcopyright}
+\copyrightyear{2018}
+\acmYear{2018}
+\acmDOI{XXXXXXX.XXXXXXX}
+
+%% These commands are for a PROCEEDINGS abstract or paper.
+\acmConference[Conference acronym 'XX]{Make sure to enter the correct
+  conference title from your rights confirmation emai}{June 03--05,
+  2018}{Woodstock, NY}
+%
+%  Uncomment \acmBooktitle if th title of the proceedings is different
+%  from ``Proceedings of ...''!
+%
+\acmBooktitle{Woodstock '18: ACM Symposium on Neural Gaze Detection,
+ June 03--05, 2018, Woodstock, NY} 
+\acmPrice{15.00}
+\acmISBN{978-1-4503-XXXX-X/18/06}
+
+
+%%
+%% Submission ID.
+%% Use this when submitting an article to a sponsored event. You'll
+%% receive a unique submission ID from the organizers
+%% of the event, and this ID should be used as the parameter to this command.
+%%\acmSubmissionID{123-A56-BU3}
+
+%%
+%% For managing citations, it is recommended to use bibliography
+%% files in BibTeX format.
+%%
+%% You can then either use BibTeX with the ACM-Reference-Format style,
+%% or BibLaTeX with the acmnumeric or acmauthoryear sytles, that include
+%% support for advanced citation of software artefact from the
+%% biblatex-software package, also separately available on CTAN.
+%%
+%% Look at the sample-*-biblatex.tex files for templates showcasing
+%% the biblatex styles.
+%%
+
+%%
+%% The majority of ACM publications use numbered citations and
+%% references.  The command \citestyle{authoryear} switches to the
+%% "author year" style.
+%%
+%% If you are preparing content for an event
+%% sponsored by ACM SIGGRAPH, you must use the "author year" style of
+%% citations and references.
+%% Uncommenting
+%% the next command will enable that style.
+%%\citestyle{acmauthoryear}
+
+%%
+%% end of the preamble, start of the body of the document source.
+% My Packages
+\usepackage{cleveref}
+\usepackage{comment}
+\usepackage{csvsimple}
+\usepackage{datatool}
+\usepackage{todonotes}[disable]
+\usepackage{graphicx}
+\usepackage{subcaption}
+\newcommand{\todokdinline}[1]{\todo[color=red!20,inline]{{KD: \small #1}}}
+\newcommand{\todokd}[1]{\todo[color=red!20]{{\small #1 -- Kasra}}}
+% \newcommand{\todocainline}[1]{\todo[color=yellow!20,inline]{{CA: \small #1}}}
+\newcommand{\todocm}[1]{\todo[color=green!40]{\small #1 -- Cynthia}}
+\newcommand{\todocmi}[1]{\todo[inline,color=green!40]{\small #1 -- Cynthia}}
+\newcommand{\todoff}[1]{\todo[color=blue!20]{\small #1 -- Frank}}
+\newcommand{\todoffinline}[1]{\todo[inline,color=blue!20]{\small #1 -- Frank}}
+\newcommand{\todoed}[1]{\todo[color=cyan!20]{\small #1 -- Ed}}
+
+\newcommand{\CitationNeeded}[1]{{\textbf {\color{red}Cite #1}}}
+\newcommand{\ProofRead}[1]{{\textbf {\color{red}Proofread please #1}}}
+\newcommand{\Complete}[0]{{\textbf {\color{red}Complete it }}}
+\newcommand{\Rephrase}[1]{{\textbf {\color{red}Rephrase please #1}}}
+\newcommand{\TD}[1]{{\color{red}{\textbf{TODO}}} #1}
+\newcommand{\OK}[1]{{\color{green}{\textbf{DONE}}} #1}
+\newcommand{\DO}[1]{{\color{blue}{\textbf{PROG}}} #1}
+\newcommand{\ours}{\textsc{EMMA}}
+% \newcommand{\ours}{\textsc{EMMA}}
+\newcommand{\geom}{\textsc{Geometric Alignment}}
+\newcommand{\supcon}{\textsc{SupCon}}
+
+%%%%%%%%%%%%%%%%%%%%
+% EDITING LINK: 
+% https://www.overleaf.com/3575751412sjsdmszkxsyh
+%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%%
+%% The "title" command has an optional parameter,
+%% allowing the author to define a "short title" to be used in page headers.
+\title{Multimodal Language Learning in the Face of Missing Modalities}
+% \\ Extended Multimodal Alignment \\ Combining Geometric and classification ... }
+
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+
+\author{Kasra Darvish}
+% \authornote{Both authors contributed equally to this research.}
+\email{kasradarvish@umbc.edu}
+% \orcid{1234-5678-9012}
+% \author{G.K.M. Tobin}
+% \authornotemark[1]
+% \email{webmaster@marysville-ohio.com}
+\affiliation{%
+  \institution{University of Maryland Baltimore County}
+  % \streetaddress{P.O. Box 1212}
+  \city{Baltimore}
+  \state{MD}
+  \country{USA}
+  % \postcode{43017-6221}
+}
+
+\author{Edward Raff}
+\affiliation{%
+  \institution{University of Maryland Baltimore County \\
+      Booz Allen Hamilton}
+  % \streetaddress{1 Th{\o}rv{\"a}ld Circle}
+  \city{Baltimore}
+  \country{USA}}
+\email{Raff\_Edward@bah.com}
+
+\author{Francis Ferraro}
+\affiliation{%
+  \institution{University of Maryland Baltimore County}
+  % \streetaddress{1 Th{\o}rv{\"a}ld Circle}
+  \city{Baltimore}
+  \country{USA}}
+\email{ferraro@umbc.edu}
+
+\author{Cynthia Matuszek}
+\affiliation{%
+  \institution{University of Maryland Baltimore County}
+  \city{Baltimore}
+  \country{USA}}
+\email{cmat@umbc.edu}
+      
+%%
+%% By default, the full list of authors will be used in the page
+%% headers. Often, this list is too long, and will overlap
+%% other information printed in the page headers. This command allows
+%% the author to define a more concise list
+%% of authors' names for this purpose.
+\renewcommand{\shortauthors}{Trovato and Tobin, et al.}
+
+%%
+%% The abstract is a short summary of the work to be presented in the
+%% article.
+
+\begin{abstract}
+% Grounded language understanding, in which natural language is used as a query against objects in a physical environment, allows a real-world, intuitive mechanism by which users can instruct physical agents to engage in tasks such as object retrieval. Visuolinguistic approaches to such object inference tasks typically involve training on large pools of image/text pairs and then using language to subselect elements of the sensed environment. However, physical agents such as robots typically have access to sensory and interactive modalities beyond vision, and learning from multiple modalities can improve performance on downstream tasks. In order to fully leverage multimodal training data while being robust to missing information, we propose a generalized distance-based loss function that can be extended to learn retrieval models that incorporate an arbitrary number of modalities. We demonstrate the usability of our model on a grounded language object retrieval scenario, where an intelligent agent has to select an object given an unconstrained language command. We leverage four modalities including vision, depth sensing, text, and speech, and we show that our model can outperform state-of-the-art contrastive models when modalities are ablated.
+
+    % shorter version
+    
+    Our study is motivated by needs in robotics and computer-human interaction, where an agent has many sensors and thus modalities with which a human may interact, both to communicate a desired goal and for the agent to recognize a desired target object. For such problems, there has been little research on integrating more than two modalities. While there have been widely popular works based on cross-entropy, there is an entirely separate family of approaches based on explicit geometric alignment known as contrastive learning. However, to the best of our knowledge there has been no work on combining the two approaches for multimodal learning. We propose to combine both families of approaches and argue that the two are complementary. We introduce \textit{extended multimodal alignment (EMMA)}, a geometric (distance-based) method combined with a contrastive loss function. Our method can be used to learn retrieval models that incorporate an arbitrary number of views of a particular piece of data, compounded by the challenge of retrieval when a modality becomes unavailable. We demonstrate the usability of our model on a grounded language object retrieval scenario, where an intelligent agent has to select an object given an unconstrained language command. We leverage four modalities including vision, depth sensing, text, and speech, and we show that our model converges approximately 5 times faster than previous strong baselines, and out-performs or is strongly competitive with state-of-the-art contrastive learning. % (in 80\% less time).
+    %when modalities are ablated. 
+    %TODO: another baseline where we use cross-entropy loss only is missing I guess.
+    The code is publicly available on GitHub and will be included for the camera-ready version (it is redacted for anonymity).
+\end{abstract}
+
+%%
+%% The code below is generated by the tool at http://dl.acm.org/ccs.cfm.
+%% Please copy and paste the code instead of the example below.
+%%
+\begin{CCSXML}
+<ccs2012>
+ <concept>
+  <concept_id>10010520.10010553.10010562</concept_id>
+  <concept_desc>Computer systems organization~Embedded systems</concept_desc>
+  <concept_significance>500</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10010520.10010575.10010755</concept_id>
+  <concept_desc>Computer systems organization~Redundancy</concept_desc>
+  <concept_significance>300</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10010520.10010553.10010554</concept_id>
+  <concept_desc>Computer systems organization~Robotics</concept_desc>
+  <concept_significance>100</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10003033.10003083.10003095</concept_id>
+  <concept_desc>Networks~Network reliability</concept_desc>
+  <concept_significance>100</concept_significance>
+ </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computer systems organization~Embedded systems}
+\ccsdesc[300]{Computer systems organization~Redundancy}
+\ccsdesc{Computer systems organization~Robotics}
+\ccsdesc[100]{Networks~Network reliability}
+
+%%
+%% Keywords. The author(s) should pick words that accurately describe
+%% the work being presented. Separate the keywords with commas.
+\keywords{datasets, neural networks, gaze detection, text tagging}
+
+%% A "teaser" image appears between the author and affiliation
+%% information and the body of the document, and typically spans the
+%% page.
+\begin{comment}
+\begin{teaserfigure}
+  \includegraphics[width=\textwidth]{sampleteaser}
+  \caption{Seattle Mariners at Spring Training, 2010.}
+  \Description{Enjoying the baseball game from the third-base
+  seats. Ichiro Suzuki preparing to bat.}
+  \label{fig:teaser}
+\end{teaserfigure}
+\end{comment}
+
+\received{20 February 2007}
+\received[revised]{12 March 2009}
+\received[accepted]{5 June 2009}
+
+%%
+%% This command processes the author and affiliation and title
+%% information and builds the first part of the formatted document.
+\maketitle
+
+
+
+
+
+
+%%
+%% The acknowledgments section is defined using the "acks" environment
+%% (and NOT an unnumbered section). This ensures the proper
+%% identification of the section in the article metadata, and the
+%% consistent spelling of the heading.
+\begin{acks}
+To Robert, for the bagels and explaining CMYK and color spaces.
+\end{acks}
+
+%%
+%% The next two lines define the bibliography style to be used, and
+%% the bibliography file.
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+%%
+%% If your work has an appendix, this is the place to put it.
+\appendix
+\label{sec:appendix}
+% \todocmi{should we get rid of this appendix? I am thinking so.}
+% \input{appendix}
+\end{document}
+\endinput
+%%
+%% End of file `sample-authordraft.tex'.

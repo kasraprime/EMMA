@@ -1,0 +1,64 @@
+\section{TODO}
+\begin{itemize}
+
+    \item \OK what to cut?
+    I think we can cut table 1.b since we don't really need to report accuracy when we have MRR, and ACC is always lower than MRR. Maybe we can report acc in the body of the paper with 1 or 2 sentences.
+    \item \TD look at training performance for SupCon 0.75
+    \item \TD make sure intro is SIGIR focused by comparing it with previous SIGIR
+    \item \OK run Geom with dropped training set 
+    \item \OK graph of converged performance (5 data points? more datapoints from 0.5 and 0.75: 0.55 and 0.65)
+    \item \TD You can also compute AUC of performance vs. epoch. You can also compute AUC of performance vs. epoch. Nisha's AL paper as an ex.
+    \item \OK modify it for SIGIR
+    \item \TD EMMA as a contstrained optimization for Geometric portion to not satisfy it.
+    \item \TD constrained SupCon per instance modality constraints: for this particular anchor and corresponding neighbors, we want this constraint to be satisfied.
+    \item \OK Do you control for in batch negatives for supcon portion? Yes.
+    \item \TD alternate training of supcon and emma. E.g. train supcon for 50 epochs and emma for the next 50 epochs
+    \item \OK removing objects that have less than a number of instances? yes, but it's not a good story, since we want emma to work in low-data regime. I removed items that has more than a number of NA descriptions and/or less than a number of instances, and the results are not that different.
+    \item \DO ablating number of data points and have a graph based on different number of training data --> maybe EMMA degrades less than SupCon and that would be good
+    \item \TD use supcon portion to reweight the geometric values or use a method to have different scores for different pairs in the geometric loss. Targeting specific pair of embeddings.
+    \item \TD it seems to be a tension between geometric portion and the supcon loss
+    \item \OK another column for number of NAs in test and train and then correlation between them
+
+    \item \OK add another column for the number of instances and then compute correlation between that and the differential scores. Take the correlation between number of instances and each column (metric) and then the correlation and the average of columns.
+
+    \item listen to the speeches for NA descriptions and the ones where there is a significant difference in performance
+
+    \item \OK listen to the speeches for empty transcriptions.
+
+    \item \TD take a look at the depth images
+    
+    \item going forward we have two options: Improve the model, or do a deep analysis why our results are like this
+    
+    \item We could do something that addresses the "open questions" (which questions remain?)
+
+    I guess the main open question is the mixed results and the fact that they are within the std dev of each other. Basically, I think they are unsure whether being faster is a good result or not.
+    What the reader would take away?
+    
+    \item \DO What the rich analysis would consist of?
+
+    \item Why are we getting what we are getting?
+    
+    Visualize individual data points and what are the failure modes.
+    You can do the same for type by type (apples vs books)
+    The percent that EMMA got right and SupCon got wrong and vice versa.
+
+    have pictures, positive set and negative set,
+    and all modalities and then show scores for all of them.
+    
+    \item \TD Different datasets or tasks
+    \item \TD How can we tell when modalities are complementary?
+
+    I think they meant when loss functions are complementary, am I wrong?
+    
+    \item \TD How can we tell what losses to use in what cases?
+    
+    \item  \TD Why didn't our approach work better, and what can we do to improve it?
+    
+    One reason could be that \supcon{} considers the distance between all pairs of data points in a batch.
+    
+    \item What's the next thing to try or add?
+    
+    We could add a weighting term to balance the effect of \supcon{} and \geom{}.
+    
+\end{itemize}
+
