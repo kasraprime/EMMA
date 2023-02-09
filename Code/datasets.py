@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision
 from sklearn.model_selection import train_test_split
 import flair
+from sentence_transformers import SentenceTransformer
 import re
 from skimage import io
 import skimage
@@ -95,17 +96,25 @@ class GoLD_Dataset(Dataset):
             self.rgb_embeddings, self.depth_embeddings = self.image_embeddings[0], self.image_embeddings[1]
         
         if computed_lang_embeds is None:
-            if os.path.exists('../data/'+task+'_language_embeddings.pkl'):
-                print(f'loading {task} language embeddings previously saved')
-                self.language_embeddings = pickle.load(open('../data/'+task+'_language_embeddings.pkl', 'rb'))
+            if os.path.exists('../data/'+task+'_'+self.config.lm+'_language_embeddings.pkl'):
+                print(f'loading {self.config.lm} language embeddings previously saved for {task}')
+                self.language_embeddings = pickle.load(open('../data/'+task+'_'+self.config.lm+'_language_embeddings.pkl', 'rb'))
             else:
-                print('computing language embeddings once ...')
+                print(f'computing {self.config.lm} language embeddings once ...')
                 self.language_embeddings = []
-                self.language_model = flair.embeddings.DocumentPoolEmbeddings([flair.embeddings.BertEmbeddings()])
+                if self.config.lm == 'bert':
+                    self.language_model = flair.embeddings.DocumentPoolEmbeddings([flair.embeddings.BertEmbeddings()])
+                elif self.config.lm == 'bart-base':
+                    self.language_model = flair.embeddings.TransformerDocumentEmbeddings('facebook/bart-base')
+                elif self.config.lm == 'bart-large':
+                    self.language_model = flair.embeddings.TransformerDocumentEmbeddings('facebook/bart-large')
+                elif self.config.lm == 't5':
+                    self.language_model = SentenceTransformer('sentence-transformers/sentence-t5-base')
+                    # self.language_model = flair.embeddings.TransformerDocumentEmbeddings('t5-base') # Not working
                 for i in range(len(self.descriptions)):
                     self.language_embeddings.append(self.proc_sentence(self.descriptions[i]).detach().cpu().numpy())
-                print('Done computing language embeddings once!')
-                pickle.dump(self.language_embeddings, open('../data/'+task+'_language_embeddings.pkl', 'wb'))
+                print(f'Done computing {self.config.lm} language embeddings once!')
+                pickle.dump(self.language_embeddings, open('../data/'+task+'_'+self.config.lm+'_language_embeddings.pkl', 'wb'))
         else:
             self.language_embeddings = computed_lang_embeds
 
@@ -242,9 +251,13 @@ class GoLD_Dataset(Dataset):
         return re.search(pattern,picture_name).group(0)
     
     def proc_sentence(self, t):
-        sentence = flair.data.Sentence(t, use_tokenizer=True)
-        self.language_model.embed(sentence)
-        return sentence.get_embedding()
+        if self.config.lm == 't5':
+            embedding = torch.Tensor(self.language_model.encode(t)).squeeze(0)
+        else:
+            sentence = flair.data.Sentence(t, use_tokenizer=True)
+            self.language_model.embed(sentence)
+            embedding = sentence.get_embedding()
+        return embedding
     
     def proc_speech(self, audio_name):
         audio_file = self.root_dir + 'speech_16/' + audio_name + '.wav'

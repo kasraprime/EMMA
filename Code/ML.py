@@ -347,6 +347,7 @@ def load_configs():
     parser.add_argument('--noise', default='clean', type=str)
     parser.add_argument('--drop_train_data', default=0, type=float)
     parser.add_argument('--drop_train_data_objects', default='objects', type=str, help='inputs are: objects, randomly')
+    parser.add_argument('--lm', default='bert', type=str, help='language models for text embeddings: bert, bart-base, bart-large, t5')
     
     args = parser.parse_args()
     if args.method == 'supervised-contrastive':
@@ -370,6 +371,12 @@ if __name__ == "__main__":
     if 'd' in config.data_type:
         config.modalities.append('depth')
     
+    if config.lm == 'bert':
+        config.text_dim = 3072
+    elif config.lm == 'bart-large':
+        config.text_dim = 1024
+    elif config.lm in ['bart-base', 't5', 't5-large']:
+        config.text_dim = 768
     
     set_seeds(config)
     device = setup_device(config.gpu_num)
@@ -382,7 +389,7 @@ if __name__ == "__main__":
 
     rgb_model = TheModel(config, feature_size=2048, device=device, embed_dim=config.embed_dim)
     depth_model = TheModel(config, feature_size=2048, device=device, embed_dim=config.embed_dim)
-    language_model = TheModel(config, feature_size=3072, device=device, embed_dim=config.embed_dim)
+    language_model = TheModel(config, feature_size=config.text_dim, device=device, embed_dim=config.embed_dim)
     audio_model = TheModel(config, feature_size=3072, device=device, embed_dim=config.embed_dim)
     models = {'rgb': rgb_model, 'depth':depth_model, 'language': language_model, 'audio': audio_model}
     # TODO: for modality in modalities: 
