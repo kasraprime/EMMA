@@ -8,10 +8,19 @@ import tikzplotlib
 
 
 exp_ugly_names = {
+    'EMMAbert-1': 'exp-0.99-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-2': 'exp-0.98-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'EMMAbert-5': 'exp-0.95-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAt5base-5': 'exp-0.95-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'EMMAbert-10': 'exp-0.90-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAt5base-10': 'exp-0.90-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
     'EMMAbert-25': 'exp-0.75-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'EMMAt5base-25': 'exp-0.75-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAbartbase-25': 'exp-0.75-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAbartlarge-25': 'exp-0.75-train-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbartbase-25': 'exp-0.75-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbartlarge-25': 'exp-0.75-train-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     # 'EMMA-30': 'exp-0.70-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMA-35': 'exp-0.65-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
@@ -21,13 +30,21 @@ exp_ugly_names = {
 
     'EMMAbert-100': 'exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'EMMAt5base-100': 'exp-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAbartbase-100': 'exp-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAbartlarge-100': 'exp-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbartbase-100': 'exp-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbartlarge-100': 'exp-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'SupConbert-1': 'exp-0.99-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'SupConbert-5': 'exp-0.95-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupCont5base-5': 'exp-0.95-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'SupConbert-10': 'exp-0.90-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupCont5base-10': 'exp-0.90-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'SupConbert-25': 'exp-0.75-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'SupCont5base-25': 'exp-0.75-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupConbartbase-25': 'exp-0.75-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupConbartlarge-25': 'exp-0.75-train-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbartbase-25': 'exp-0.75-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbartlarge-25': 'exp-0.75-train-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     
     # 'SupCon-30': 'exp-0.70-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'SupCon-35': 'exp-0.65-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
@@ -37,8 +54,21 @@ exp_ugly_names = {
     
     'SupConbert-100': 'exp-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'SupCont5base-100': 'exp-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupConbartbase-100': 'exp-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupConbartlarge-100': 'exp-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbartbase-100': 'exp-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbartlarge-100': 'exp-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'Geometricbert-1': 'exp-0.99-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometricbert-2': 'exp-0.98-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'Geometricbert-5': 'exp-0.95-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometrict5base-5': 'exp-0.95-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'Geometricbert-10': 'exp-0.90-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometrict5base-10': 'exp-0.90-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+ 
+    'Geometricbert-25': 'exp-0.75-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometrict5base-25': 'exp-0.75-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometricbartlarge-25': 'exp-0.75-train-bart-large-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     # 'Geometric-25': 'exp-0.75-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'Geometric-30': 'exp-0.70-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
@@ -47,6 +77,10 @@ exp_ugly_names = {
     # 'Geometric-50': 'exp-0.50-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'Geometric-75': 'exp-0.25-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'Geometric-100': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'Geometricbert-100': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometrict5base-100': 'exp-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometrictbartlarge-100': 'exp-bart-large-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     # 'Contrastive-100': 'exp-contrastive-org-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 }
@@ -82,6 +116,21 @@ for method in experiments.keys():
 
 print(experiments)
 
+def get_color_style(method):
+   
+    if 'SupCon' in method:
+        color = 'tab:orange'
+    elif 'EMMA' in method:
+        color = 'tab:green'
+    elif 'Geometric' in method:
+        color = 'tab:blue'
+
+    if 'bert' in method:
+        style = '-.^'
+    elif 't5base' in method:
+        style = ':+'
+    
+    return color, style
 
 results = {}
 for method in experiments.keys():
@@ -241,10 +290,12 @@ elif name == 'converged-partial-train':
         ax = fig.add_subplot(1,1,1)
         for method_idx, method in enumerate(results_converged.keys()):
             percentages = list(results_converged[method].keys())
-            plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], styles_markers[method_idx], label=method, markersize=15)
+            # plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], styles_markers[method_idx], label=method, markersize=15)
+            color_model, style_embd = get_color_style(method)
+            plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], style_embd, color=color_model, label=method, markersize=15)
             low = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages]) - np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in percentages])
             high = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages]) + np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in percentages])
-            plt.fill_between([str(percent) for percent in percentages], low, high, alpha=0.2)
+            plt.fill_between([str(percent) for percent in percentages], low, high, color=color_model, alpha=0.2)
 
         # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
         # ax.grid(True)
@@ -259,7 +310,7 @@ elif name == 'converged-partial-train':
         plt.xticks(fontsize=30)
         # plt.xticks([1, 5, 10, 50, 80, 100, 150, 190], fontsize=30)
         plt.yticks(fontsize=30)
-        plt.legend(loc='lower right', fontsize=40, ncol=1)
+        plt.legend(loc='lower right', fontsize=30, ncol=1)
         # fig.legend(loc='lower right', fontsize=40, ncol=1)
         plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
 

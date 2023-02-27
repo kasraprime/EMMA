@@ -3,8 +3,9 @@
 #SBATCH --mem=80000
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=108:00:00
+#SBATCH --time=13:00:00
 #SBATCH --constraint=rtx_8000|rtx_6000|rtx_2080
+#SBATCH --exclude=g12
 #SBATCH --output=results/jobs/slurm-%j.out
 # Make sure to make the results/jobs directory before running this script.
 
@@ -30,6 +31,8 @@ eval_mode='train-test' # train , train-test , test
 activation='relu'
 optimizer='SGD'
 lr=0.001
+drop_train_data=0
+lm='bert'
 
 # setup directories
 exp_full_name=$exp_name'-'$method'-'$data_type'-'$batch_size'-'$activation'-'$optimizer'-'$lr'-'$candidate_constraint'-'$task'-'$negative_sampling'-'$embed_dim
@@ -91,7 +94,7 @@ scratch_data=$TMPDIR/data/
 
 python -u ML.py --wandb_track $track --experiment_name $exp_name --epochs $epoch --task $task --data_dir $scratch_data \
 --random_seed $random_seed --embed_dim $embed_dim --data_type $data_type --method $method --candidate_constraint $candidate_constraint \
---prediction_thresh $pred --results_dir $results_dir  --exp_full_name $exp_full_name \
+--prediction_thresh $pred --results_dir $results_dir  --exp_full_name $exp_full_name --drop_train_data $drop_train_data --lm $lm \
 --learning_rate $lr --eval_mode $eval_mode --per_epoch $per_epoch --batch_size $batch_size --optimizer $optimizer \
 --activation $activation --gpu_num $gpu_num --negative_sampling $negative_sampling 2>&1 | tee -a $results_dir'out.log'
 
