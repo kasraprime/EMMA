@@ -8,6 +8,10 @@ This repository contains three parts.
 
 
 # How to run the Code
+Install requierments.
+```bash
+pip install -r requierments.txt
+```
 Go to the *Code* directory first.
 ```bash
 cd Code
