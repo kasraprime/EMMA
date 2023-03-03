@@ -1,0 +1,6 @@
+wandb
+scikit-learn
+scikit-image
+flair
+sentence_transformers
+soundfile
