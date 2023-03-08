@@ -8,6 +8,8 @@ import tikzplotlib
 
 
 exp_ugly_names = {
+    'EMMAbert-0.7': 'exp-0.993-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert4-1': 'exp-0.99-train-supcon-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'EMMAbert-1': 'exp-0.99-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'EMMAbert-2': 'exp-0.98-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
@@ -33,7 +35,10 @@ exp_ugly_names = {
     # 'EMMAbartbase-100': 'exp-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAbartlarge-100': 'exp-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
+
+    'SupConbert4-1': 'exp-0.99-train-supcon-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'SupConbert-1': 'exp-0.99-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConbert-2': 'exp-0.98-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'SupConbert-5': 'exp-0.95-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'SupCont5base-5': 'exp-0.95-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
@@ -57,6 +62,8 @@ exp_ugly_names = {
     # 'SupConbartbase-100': 'exp-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'SupConbartlarge-100': 'exp-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
+    'Geometricbert-0.7': 'exp-0.993-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometricbert4-1': 'exp-0.99-train-full-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'Geometricbert-1': 'exp-0.99-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'Geometricbert-2': 'exp-0.98-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
@@ -129,6 +136,9 @@ def get_color_style(method):
         style = '-.^'
     elif 't5base' in method:
         style = ':+'
+    
+    if 'bert4' in method:
+        style = '-.o'
     
     return color, style
 
