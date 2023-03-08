@@ -72,9 +72,9 @@ def train(config, models, dataset, device):
                 if portion != 'train':
                     # results['best']['best-'+portion].update(dict(zip(results['best']['best-'+portion].keys(), results[epoch][portion].values())))
                     results['best']['best-'+portion] = results[epoch][portion]
-
-        wandb.log({**{'epoch': epoch}, **logs[epoch], **results[epoch]})
-        wandb.run.summary.update(results['best'])
+        if config.wandb_track == 1:
+            wandb.log({**{'epoch': epoch}, **logs[epoch], **results[epoch]})
+            wandb.run.summary.update(results['best'])
         json.dump(results, open(config.results_dir+'results.json', 'w'), indent=4)
         json.dump(logs, open(config.results_dir+'logs.json', 'w'), indent=4)
         if config.per_epoch == 'all':
@@ -209,7 +209,8 @@ def test(config, models, dataset, portion):
     results['test-only'], outputs[portion] = evaluate(config, models, dataset, 'test')
     results['best']['best-'+portion].update(dict(zip(results['best']['best-'+portion].keys(), results['test-only'].values())))
     
-    wandb.run.summary.update(results['best'])
+    if config.wandb_track == 1:
+        wandb.run.summary.update(results['best'])
     json.dump(results, open(config.results_dir+'results.json', 'w'), indent=4)
     pickle.dump(outputs, open(config.results_dir+'outputs-test.pkl', 'wb'))
 
