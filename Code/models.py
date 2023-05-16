@@ -15,6 +15,7 @@ class TheModel(torch.nn.Module):
         self.fc2 = torch.nn.Linear(feature_size, feature_size)
         self.fc3 = torch.nn.Linear(feature_size, embed_dim)
         # End of mapping layers
+        # self.dropout = torch.nn.Dropout(p=0.5)
         
     def forward(self, feature, mode='train', method='emma'):
         output = {}

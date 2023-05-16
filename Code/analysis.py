@@ -7,91 +7,120 @@ import matplotlib.pyplot as plt
 import tikzplotlib
 
 
+# set the name of the experiment
+name = 'converged-partial-train' # 'epochs' or 'converged-partial-train' or 'converged-batch-size' or 'converged-partial-train-loss-vs-mrr'
+
+# Add and choose the experiments you want
 exp_ugly_names = {
     'EMMAbert-0.7': 'exp-0.993-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAbert4-1': 'exp-0.99-train-supcon-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbertbs4-1': 'exp-0.99-train-supcon-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'EMMAbert-1': 'exp-0.99-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'EMMAbert-2': 'exp-0.98-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'EMMAbert-5': 'exp-0.95-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAt5base-5': 'exp-0.95-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAt5base-5': 'exp-0.95-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'EMMAbert-10': 'exp-0.90-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAt5base-10': 'exp-0.90-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAt5base-10': 'exp-0.90-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'EMMAbert-25': 'exp-0.75-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAt5base-25': 'exp-0.75-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAt5base-25': 'exp-0.75-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAbartbase-25': 'exp-0.75-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAbartlarge-25': 'exp-0.75-train-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
-    # 'EMMA-30': 'exp-0.70-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'EMMA-35': 'exp-0.65-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'EMMA-45': 'exp-0.55-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'EMMA-50': 'exp-0.5-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'EMMA-75': 'exp-0.25-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-30': 'exp-0.70-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-35': 'exp-0.65-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-45': 'exp-0.55-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-50': 'exp-0.5-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-75': 'exp-0.25-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'EMMAbert-100': 'exp-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'EMMAt5base-100': 'exp-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAt5base-100': 'exp-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAbartbase-100': 'exp-train-bart-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAbartlarge-100': 'exp-bart-large-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
-
-    'SupConbert4-1': 'exp-0.99-train-supcon-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbertD7-1': 'exp-0.99-train-dropout7-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbertD5-1': 'exp-0.99-train-dropout5-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbertZ-1': 'exp-0.99-train-zero-out-neg-row-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbertZS-1': 'exp-0.99-train-zero-out-neg-row-sym-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbertbs4-1': 'exp-0.99-train-supcon-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupConbert4GradAccum-1': 'exp-0.99-train-grad-accum-supcon-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'SupConbert-1': 'exp-0.99-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'SupConbert-2': 'exp-0.98-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'SupConbert-5': 'exp-0.95-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupCont5base-5': 'exp-0.95-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCont5base-5': 'exp-0.95-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'SupConbert-10': 'exp-0.90-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupCont5base-10': 'exp-0.90-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCont5base-10': 'exp-0.90-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'SupConbert-25': 'exp-0.75-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupCont5base-25': 'exp-0.75-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCont5base-25': 'exp-0.75-train-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'SupConbartbase-25': 'exp-0.75-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'SupConbartlarge-25': 'exp-0.75-train-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     
-    # 'SupCon-30': 'exp-0.70-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'SupCon-35': 'exp-0.65-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'SupCon-45': 'exp-0.55-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'SupCon-50': 'exp-0.5-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'SupCon-75': 'exp-0.25-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConbert-30': 'exp-0.70-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConbert-35': 'exp-0.65-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConbert-45': 'exp-0.55-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConbert-50': 'exp-0.5-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConbert-75': 'exp-0.25-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     
     'SupConbert-100': 'exp-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'SupCont5base-100': 'exp-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'SupCont5base-100': 'exp-t5-base-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'SupConbartbase-100': 'exp-train-bart-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'SupConbartlarge-100': 'exp-bart-large-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'Geometricbert-0.7': 'exp-0.993-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'Geometricbert4-1': 'exp-0.99-train-full-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometricbert4-1': 'exp-0.99-train-full-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'Geometricbert-1': 'exp-0.99-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'Geometricbert-2': 'exp-0.98-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'Geometricbert-5': 'exp-0.95-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'Geometrict5base-5': 'exp-0.95-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometrict5base-5': 'exp-0.95-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'Geometricbert-10': 'exp-0.90-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'Geometrict5base-10': 'exp-0.90-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometrict5base-10': 'exp-0.90-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
  
     'Geometricbert-25': 'exp-0.75-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'Geometrict5base-25': 'exp-0.75-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Geometrict5base-25': 'exp-0.75-train-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'Geometricbartlarge-25': 'exp-0.75-train-bart-large-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
-    # 'Geometric-25': 'exp-0.75-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'Geometric-30': 'exp-0.70-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'Geometric-35': 'exp-0.65-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'Geometric-45': 'exp-0.55-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'Geometric-50': 'exp-0.50-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'Geometric-75': 'exp-0.25-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    # 'Geometric-100': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-
+    'Geometricbert-30': 'exp-0.70-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometricbert-35': 'exp-0.65-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometricbert-45': 'exp-0.55-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometricbert-50': 'exp-0.50-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometricbert-75': 'exp-0.25-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     'Geometricbert-100': 'exp-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
-    'Geometrict5base-100': 'exp-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    # 'Geometrict5base-100': 'exp-t5-base-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'Geometrictbartlarge-100': 'exp-bart-large-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
-    # 'Contrastive-100': 'exp-contrastive-org-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'Contrastivebert-100': 'exp-contrastive-org-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 }
 
+
+
+exp_ugly_names_batch_size = {
+    'EMMA-4': 'exp-0.99-train-supcon-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMA-64': 'exp-0.99-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+
+    'SupCon-4': 'exp-0.99-train-supcon-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupConGradAccum-4': 'exp-0.99-train-grad-accum-supcon-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'SupCon-64': 'exp-0.99-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    
+    'Geometric-4': 'exp-0.99-train-full-emma-lard-4-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'Geometric-64': 'exp-0.99-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+}
+
+if name == 'converged-batch-size':
+    exp_ugly_names = exp_ugly_names_batch_size 
+
+# if you don't want to report results for different language models:
+temp_exp_ugly_names = {}
+for key in exp_ugly_names.keys():
+    temp_exp_ugly_names[key.split('-')[0].replace('bert', '')+'-'+key.split('-')[1]] = exp_ugly_names[key]
+    
+exp_ugly_names = temp_exp_ugly_names
 
 # exp_ugly_names = {
 #     '4M-eMMA-text': '4M-eMMA-cosine-submodalities-text-anchor-gold-no_neg_sampling-1024',
@@ -124,7 +153,10 @@ for method in experiments.keys():
 print(experiments)
 
 def get_color_style(method):
-   
+    # default values
+    color = 'tab:blue'
+    style = '--*'
+    
     if 'SupCon' in method:
         color = 'tab:orange'
     elif 'EMMA' in method:
@@ -137,26 +169,45 @@ def get_color_style(method):
     elif 't5base' in method:
         style = ':+'
     
-    if 'bert4' in method:
+    if 'bs4' in method:
         style = '-.o'
+    if 'GradAccum' in method:
+        style = '--v'
+    if 'bertZ' in method:
+        style = '--s'
+    if 'bertZS' in method:
+        style = '--8'
+    if 'bertD5' in method:
+        style = '-.H'
+    if 'bertD7' in method:
+        style = '--*'
     
     return color, style
 
 results = {}
+logs = {}
 for method in experiments.keys():
     results[method] = {}
+    logs[method] = {}
     for seed in experiments[method].keys():
         res = json.load(open(experiments[method][seed]+'results.json'))
+        loss = json.load(open(experiments[method][seed]+'logs.json'))
         del res['best']
         if 'test-only' in res.keys():
             del res['test-only']
         results[method][seed] = res
+        logs[method][seed] = {key: value['total'] for key, value in loss.items()}
+
     results[method]['avg'] = {'best':{}}
     results[method]['std'] = {'best':{}}
+    logs[method]['avg'] = {'best':{}}
+    logs[method]['std'] = {'best':{}}
     # computing average and std over seeds for each metric of each portion of each epoch
     for epoch in results[method][seed].keys():
         results[method]['avg'][epoch] = {}
         results[method]['std'][epoch] = {}
+        logs[method]['avg'][epoch] = np.mean([logs[method][seed][epoch] for seed in experiments[method].keys()])
+        logs[method]['std'][epoch] = np.std([logs[method][seed][epoch] for seed in experiments[method].keys()])
         for portion in results[method]['seed-42'][epoch].keys():
             results[method]['avg'][epoch][portion] = {}
             results[method]['std'][epoch][portion] = {}
@@ -168,10 +219,17 @@ for method in experiments.keys():
     for portion in results[method]['seed-42']['0'].keys():
         results[method]['avg']['best'][portion] = {}
         results[method]['std']['best'][portion] = {}
+        logs[method]['avg']['best'][portion] = {}
+        logs[method]['std']['best'][portion] = {}
+
         for metric in results[method]['seed-42']['0'][portion].keys():
             results[method]['avg']['best'][portion][metric] = np.max([results[method]['avg'][epoch][portion][metric] for epoch in results[method][seed].keys()])
             best_idx = np.argmax([results[method]['avg'][epoch][portion][metric] for epoch in results[method][seed].keys()])
             results[method]['std']['best'][portion][metric] = [results[method]['std'][epoch][portion][metric] for epoch in results[method][seed].keys()][best_idx]
+            
+            # I could discard portion and metric since loss is for train and isn't related to the mrr, but since the best performance is chosen for each metric and poriton, the corresponding index should be used
+            logs[method]['avg']['best'][portion][metric] = [logs[method]['avg'][epoch] for epoch in logs[method][seed].keys()][best_idx]
+            logs[method]['std']['best'][portion][metric] = [logs[method]['std'][epoch] for epoch in logs[method][seed].keys()][best_idx]
     
     # metr = 'mrr_ard'
     # for metr in ['mrr', 'acc']:
@@ -227,14 +285,13 @@ result_mrr.to_csv(path_or_buf=path+'resultsMRR.csv', index=False)
 result_acc.to_csv(path_or_buf=path+'resultsACC.csv', index=False)
 
 
-markers = ['P', '^', 's', 'o','v','<','>','8', 'p','*','h','H','D','d','X']
+markers = ['P', '^', 's', '+', 'o','v','<','>','8', 'p','*','h','H','D','d','X']
 styles = ['-',':','--','-.','|']
 styles_markers = ['-.^', ':+', '-o', '--s', '-.o', '-+', '--+', '-.+', ':o', '-v', '--v', '-.v']
 colors = ['tab:orange', 'tab:green', 'tab:blue', 'tab:red']
 # colors = {'f1': 'magenta', 'precision': 'red', 'recall':'blue'}
 
 
-name = 'converged-partial-train' # 'epochs' or 'converged-partial-train'
 portion = 'test'
 metric_correct_names = {
     'mrr_lrd': 'MRR speech ablated (trd)',
@@ -302,10 +359,10 @@ elif name == 'converged-partial-train':
             percentages = list(results_converged[method].keys())
             # plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], styles_markers[method_idx], label=method, markersize=15)
             color_model, style_embd = get_color_style(method)
-            plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], style_embd, color=color_model, label=method, markersize=15)
+            plt.plot([str(int(float(percent)*73.80)) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], style_embd, color=color_model, label=method, markersize=15)
             low = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages]) - np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in percentages])
             high = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages]) + np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in percentages])
-            plt.fill_between([str(percent) for percent in percentages], low, high, color=color_model, alpha=0.2)
+            plt.fill_between([str(int(float(percent)*73.80)) for percent in percentages], low, high, color=color_model, alpha=0.2)
 
         # plt.title('Metrics for different threshold of label inclusion excluding object w/ stop, w/ attention, w/o VAE, and using word embeddings')
         # ax.grid(True)
@@ -314,7 +371,7 @@ elif name == 'converged-partial-train':
         # plt.xticks(np.arange(0, len(list(results[method]['avg'].keys()))+1, 10), fontsize=30, rotation=90)
         # plt.yticks(fontsize=30)
         plt.grid(True)
-        plt.xlabel('Percentage of Training Data Used', fontsize=40)
+        plt.xlabel('Number of Training Data Points Used', fontsize=40)
         plt.ylabel(metric_correct_names[metr], fontsize=40)
         # plt.xscale("symlog", base=2)
         plt.xticks(fontsize=30)
@@ -324,6 +381,82 @@ elif name == 'converged-partial-train':
         # fig.legend(loc='lower right', fontsize=40, ncol=1)
         plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
 
+
+elif name == 'converged-batch-size':
+    results_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = results[method]
+
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        fig = plt.figure(figsize=(25,20))
+        ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results_converged.keys()):
+            batch_size = list(results_converged[method].keys())
+            # plt.plot([str(percent) for percent in batch_size], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in batch_size], styles_markers[method_idx], label=method, markersize=15)
+            color_model, style_embd = get_color_style(method)
+            plt.plot([str(percent) for percent in batch_size], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in batch_size], style_embd, color=color_model, label=method, markersize=15)
+            low = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in batch_size]) - np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in batch_size])
+            high = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in batch_size]) + np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in batch_size])
+            plt.fill_between([str(percent) for percent in batch_size], low, high, color=color_model, alpha=0.2)
+
+        plt.grid(True)
+        plt.xlabel('Batch Size', fontsize=40)
+        plt.ylabel(metric_correct_names[metr], fontsize=40)
+        plt.xticks(fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.legend(loc='upper right', fontsize=30, ncol=1)
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+
+
+elif name == 'converged-partial-train-loss-vs-mrr':
+    results_converged = {}
+    logs_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        if method.split('-')[0] not in logs_converged.keys():
+            logs_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = results[method]
+        if method.split('-')[1] not in logs_converged[method.split('-')[0]].keys():
+            logs_converged[method.split('-')[0]][method.split('-')[1]] = logs[method]
+
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        fig = plt.figure(figsize=(25,20))
+        ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results_converged.keys()):
+            percentages = list(results_converged[method].keys())
+            # plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], styles_markers[method_idx], label=method, markersize=15)
+            color_model, _ = get_color_style(method)
+            # plt.scatter([logs_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], markers, color=color_model, label=method, markersize=15)
+            for percent_idx, percent in enumerate(percentages):
+                plt.scatter(logs_converged[method][percent]['avg']['best'][portion][metr], results_converged[method][percent]['avg']['best'][portion][metr], marker=markers[percent_idx], color=color_model, label=method, s=70)
+            
+        plt.grid(True)
+        plt.xlabel('Converged Loss', fontsize=40)
+        plt.ylabel(metric_correct_names[metr], fontsize=40)
+        plt.xscale("symlog", base=2)
+        plt.xticks(fontsize=30)
+        plt.yticks(fontsize=30)
+        # plt.legend(loc='upper right', fontsize=30, ncol=1)
+        # plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+        marker_percents = list(list(results_converged.values())[0].keys())
+        handles_percents = [plt.plot([], [], markers[i], markerfacecolor='w', markeredgecolor='k')[0] for i in range(len(marker_percents))]
+        color_methods = list(results_converged.keys())
+        colors = []
+        for m in color_methods:
+            color, _ = get_color_style(m)
+            colors.append(color)
+        handles_methods = [plt.plot([], [], colors[i])[0] for i in range(len(colors))]
+        plt.legend(handles_percents+handles_methods, marker_percents+color_methods, loc='upper right', framealpha=1, fontsize=30, ncol=2)
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
 
 # Frank's request
 for method_idx, method in enumerate(results.keys()):
