@@ -263,7 +263,7 @@ class SupConLoss(nn.Module):
         self.contrast_mode = contrast_mode
         self.base_temperature = base_temperature
 
-    def forward(self, features, labels=None, instances=None, mask=None):
+    def forward(self, features, labels=None, instances=None, mask=None, config=None):
         """Compute loss for model. If both `labels` and `mask` are None,
         it degenerates to SimCLR unsupervised loss:
         https://arxiv.org/pdf/2002.05709.pdf

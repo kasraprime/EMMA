@@ -99,9 +99,14 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion, dev
         'total': 0.0,
     }
 
-    for batch_index, data in enumerate(dataset[portion]):
+    if config.grad_accum == 1:
         for optimizer in optimizers.values():
             optimizer.zero_grad()
+    
+    for batch_index, data in enumerate(dataset[portion]):
+        if config.grad_accum == 0: # default setup where we don't do grad accumulation
+            for optimizer in optimizers.values():
+                optimizer.zero_grad()
         
         if config.method == 'MMA':
             batch_loss = mma_loss(config, data['pos'], data['neg'], models)
@@ -119,13 +124,13 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion, dev
             features = models[config.modalities[0]](data['pos'][config.modalities[0]], method='supcon')['decoded'].unsqueeze(1)
             for modality in config.modalities[1:]:
                 features = torch.cat([features, models[modality](data['pos'][modality], method='supcon')['decoded'].unsqueeze(1)], dim=1)
-            batch_loss = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
+            batch_loss = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'], config=config)
         elif config.method == 'supcon-emma' or config.method == 'supcon-emma-pull-neg':
             features = models[config.modalities[0]](data['pos'][config.modalities[0]], method='supcon')['decoded'].unsqueeze(1)
             for modality in config.modalities[1:]:
                 features = torch.cat([features, models[modality](data['pos'][modality], method='supcon')['decoded'].unsqueeze(1)], dim=1)
             # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
-            batch_loss_supcon = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'])
+            batch_loss_supcon = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'], config=config)
             batch_loss_emma = extended_multimodal_alignment(config, data['pos'], data['neg'], models)
             batch_loss = {'total': batch_loss_emma['total'] + batch_loss_supcon['total']}
         elif config.method == 'bce-emma' or config.method == 'bce-emma-pull-neg':
@@ -139,10 +144,17 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion, dev
         print("batch: %d loss: %.4f\r" % (batch_index,batch_loss['total']), end="")
         
         batch_loss['total'].backward()
-        for optimizer in optimizers.values():
-            optimizer.step()
 
-    logs.update(dict(zip(running_loss.keys(), np.asarray(list(running_loss.values()))/batch_index)))
+        if config.grad_accum == 0:
+            for optimizer in optimizers.values():
+                optimizer.step()
+        elif config.grad_accum == 1:
+            if ((batch_index + 1) % 16 == 0) or (batch_index + 1 == len(dataset[portion])):
+                for optimizer in optimizers.values():
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+    logs.update(dict(zip(running_loss.keys(), np.asarray(list(running_loss.values()))/(batch_index+1))))
 
     return logs
 
@@ -349,6 +361,8 @@ def load_configs():
     parser.add_argument('--drop_train_data', default=0, type=float)
     parser.add_argument('--drop_train_data_objects', default='objects', type=str, help='inputs are: objects, randomly')
     parser.add_argument('--lm', default='bert', type=str, help='language models for text embeddings: bert, bart-base, bart-large, t5')
+    parser.add_argument('--zero_out_negatives_supcon', default=0, type=int)
+    parser.add_argument('--grad_accum', default=0, type=int)
     
     args = parser.parse_args()
     if args.method == 'supervised-contrastive':
