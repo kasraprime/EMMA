@@ -34,7 +34,8 @@ do
 # for candidate_constraint in unique_objects unique_instances
 for candidate_constraint in unique_objects
 do
-sbatch run_cluster.sh exp-0.75-train $method $modalities $batch_size $candidate_constraint $neg $dim $seed $task
+sbatch run_cluster.sh exp $method $modalities $batch_size $candidate_constraint $neg $dim $seed $task
+# sbatch run_cluster.sh exp-0.75-train $method $modalities $batch_size $candidate_constraint $neg $dim $seed $task
 done
 done
 done

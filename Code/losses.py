@@ -97,7 +97,8 @@ def extended_multimodal_alignment(config, positive, negative, models, margin=0.4
     # modalities = ['language', 'rgb', 'depth', 'audio']
     modalities = config.modalities
     loss = 0.0
-
+    count_thresh_neg_lower = 0
+    count_thresh_neg_upper = 0
     for mod_i in modalities:
         for mod_j in modalities[modalities.index(mod_i)+1:]:
             # for bs in range(len(positive['instance'])):
@@ -114,6 +115,12 @@ def extended_multimodal_alignment(config, positive, negative, models, margin=0.4
             #     edge = dict(sorted(edge.items(), key=lambda item: item[1]))
             #     print(" && ".join(f"{value} ({key})" for key, value in edge.items()))
             loss = loss + torch.sum(torch.clamp(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']) - 1 + margin, 0.0, 1.0 + margin))
+            
+            # count_thresh_neg_lower += torch.sum(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']) - 1 + margin <= 0.0)
+            # count_thresh_neg_upper += torch.sum(F.cosine_similarity(models[mod_i](positive[mod_i])['decoded'], models[mod_j](negative[mod_j])['decoded']) - 1 + margin >= 1.0 + margin)
+
+    # count_thresh_neg = count_thresh_neg_lower + count_thresh_neg_upper
+    # print(f"{count_thresh_neg} negatives thresholded: {count_thresh_neg_lower} lower bound & {count_thresh_neg_upper} upper bound. {(count_thresh_neg*100) / (len(modalities)*len(modalities)*len(positive['instance']))} percent of pushing connections have been thresholded")
 
     batch_loss['total'] = loss / len(positive['instance']) # average loss in this batch
     return batch_loss

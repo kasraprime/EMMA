@@ -27,17 +27,12 @@ def train(config, models, dataset, device):
         model = models[modality]
         if config.optimizer == 'Adam':
             optimizers[modality] = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
-            lr_lambda = lambda epoch : config.learning_rate if epoch < int(config.epochs/3) else (config.learning_rate*0.1 if epoch < int(config.epochs/3) * 2 else config.learning_rate*0.1)
+            lr_lambda = lambda epoch : config.learning_rate if epoch < int(config.epochs/3) else (config.learning_rate*0.1 if epoch < int(config.epochs/3) * 2 else config.learning_rate*0.01)
             schedulers[modality] = torch.optim.lr_scheduler.LambdaLR(optimizers[modality], lr_lambda)
         elif config.optimizer == 'SGD':
             optimizers[modality] = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=1e-4)
     
     for epoch in tqdm(range(config.epochs)):
-        if config.optimizer == 'SGD':
-            adjust_learning_rate(config, optimizers, epoch+1)
-        elif config.optimizer == 'Adam':
-            for scheduler in schedulers.values():
-                scheduler.step()
         for modality in models.keys():
             model = models[modality]
             model.train()
@@ -53,6 +48,12 @@ def train(config, models, dataset, device):
         if config.noise == 'text':
             dataset['train'].dataset.language_embeddings_data = original_lang
 
+        if config.optimizer == 'SGD':
+            adjust_learning_rate(config, optimizers, epoch+1)
+        elif config.optimizer == 'Adam':
+            for scheduler in schedulers.values():
+                scheduler.step()
+
         # evaluation on valid and possibly test        
         for portion in config.portions:
             if portion != 'train':
@@ -60,9 +61,9 @@ def train(config, models, dataset, device):
                 results[epoch][portion], outputs[portion] = evaluate(config, models, dataset, portion)
 
         # update best and save outputs of the model if valid f1 is the best
-        if epoch == 0: # TODO remove this if by doing evaluation first and training next whic also gives you the random performance before any training.
+        if epoch == 0:
             results['best']['best-valid'] = results[epoch]['valid']
-        if results[epoch]['valid']['f1_lard'] >= results['best']['best-valid']['f1_lard']:
+        if results[epoch]['valid']['mrr_lard'] >= results['best']['best-valid']['mrr_lard']:
             for modality in models.keys():
                 model = models[modality]
                 torch.save(model.state_dict(), config.results_dir+modality+'_model_state.pt')
@@ -132,12 +133,20 @@ def training(config, models, dataset, portion, optimizers, epoch, criterion, dev
             # features = torch.cat([models['language'](data['pos']['language'])['decoded'].unsqueeze(1), models['rgb'](data['pos']['rgb'])['decoded'].unsqueeze(1), models['depth'](data['pos']['depth'])['decoded'].unsqueeze(1), models['audio'](data['pos']['audio'])['decoded'].unsqueeze(1)], dim=1)
             batch_loss_supcon = criterion(features, labels=data['pos']['object'], instances=data['pos']['instance'], config=config)
             batch_loss_emma = extended_multimodal_alignment(config, data['pos'], data['neg'], models)
-            batch_loss = {'total': batch_loss_emma['total'] + batch_loss_supcon['total']}
+            batch_loss = {
+                # 'total': config.weight_emma * batch_loss_emma['total'] + config.weight_emma * batch_loss_supcon['total'], 
+                'total': config.weight_emma * batch_loss_emma['total'] + (1 - config.weight_emma) * batch_loss_supcon['total'], 
+                'geom': batch_loss_emma['total'], 
+                'supcon': batch_loss_supcon['total']
+                }
         elif config.method == 'bce-emma' or config.method == 'bce-emma-pull-neg':
             batch_loss = binary_cross_entropy_emma(config, data['pos'], data['neg'], models, device)
             
 
         # saving average loss per epoch. values in batch_loss have backward_fn and requires_grad
+        for key in batch_loss.keys():
+            if key not in running_loss.keys():
+                running_loss[key] = 0.0
         running_loss.update(dict(zip(batch_loss.keys(), [running_loss[key] + batch_loss[key].item() for key in batch_loss.keys()] )))
         # if batch_index % 20 == 0:
             # print("batch: %d loss: %.4f\r" % (batch_index,batch_loss['total']), end="")
@@ -194,6 +203,8 @@ def evaluate(config, models, dataset, portion):
             outputs['ground_truth'], outputs['predictions'], outputs['distances'] = object_retrieval_task_threshold_full_data(config, outputs['language'], outputs['vision'], outputs['object_names'])
             mrr_acc = {} # I have not implemented it for this case and I don't think it makes sense to do it.
 
+        # outputs['thresh_percent'] = percent_thresholded(config, outputs)
+        
         mrr_acc = {}
         prf = {}
         for retrieval in outputs['matrix_distances'].keys():
@@ -324,6 +335,25 @@ def object_retrieval_task_threshold_full_data(config, language, rgb, depth, obje
     return ground_truth, predictions, matrix_distance
 
 
+def percent_thresholded(config, outputs, margin=0.4):
+    from sklearn import preprocessing
+    le = preprocessing.LabelEncoder()
+    labels = le.fit_transform(outputs['object_names'])
+    labels = torch.as_tensor(labels)
+    labels = labels.contiguous().view(-1, 1)
+    mask = np.array(1 - torch.eq(labels, labels.T).float()) # Finding the dissimilar items
+    count_thresh_neg_lower = 0
+    
+    for mod_i in range(len(config.modalities)):
+        for mod_j in range(mod_i, len(config.modalities)):
+            dist = cosine_similarity(outputs[config.modalities[mod_i]], outputs[config.modalities[mod_j]]) - 1 + margin
+            if mod_i == mod_j: # for similar modalities e.g. text --> text, we need to divide by two to so that we don't count same connections twice.
+                count_thresh_neg_lower = count_thresh_neg_lower + (0.5 * np.sum(dist[np.where(mask == 1)] <= 0.0))
+            else:
+                count_thresh_neg_lower += np.sum(dist[np.where(mask == 1)] <= 0.0)
+    
+    # Denominator is shortened version of: ((len(config.modalities) * (len(config.modalities) - 1) / 2) * np.sum(mask)) + (len(config.modalities) * np.sum(mask) / 2)
+    return (count_thresh_neg_lower * 100) / (len(config.modalities) * len(config.modalities) * np.sum(mask) / 2)
 
 
 def load_configs():
@@ -363,6 +393,7 @@ def load_configs():
     parser.add_argument('--lm', default='bert', type=str, help='language models for text embeddings: bert, bart-base, bart-large, t5')
     parser.add_argument('--zero_out_negatives_supcon', default=0, type=int)
     parser.add_argument('--grad_accum', default=0, type=int)
+    parser.add_argument('--weight_emma', default=0.1, type=float)
     
     args = parser.parse_args()
     if args.method == 'supervised-contrastive':

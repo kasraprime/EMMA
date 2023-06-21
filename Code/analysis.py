@@ -4,11 +4,23 @@ import numpy as np
 import pandas as pd
 from glob import glob
 import matplotlib.pyplot as plt
+import matplotlib._color_data as mcd
 import tikzplotlib
+import seaborn as sns
+import pickle
 
 
 # set the name of the experiment
-name = 'converged-partial-train' # 'epochs' or 'converged-partial-train' or 'converged-batch-size' or 'converged-partial-train-loss-vs-mrr'
+name = 'converged-partial-train' # 'epochs' or 'converged-partial-train' or 'converged-batch-size' or 'converged-partial-train-loss-vs-mrr' 'converged-weighted-emma' 'converged-weighted-emma-scatter' 'converged-weighted-emma-threshold'
+# name = 'converged-weighted-emma'
+name = 'converged-weighted-emma-threshold'
+name = 'converged-weighted-emma-threshold-scatter'
+# name = 'converged-equally-weighted-emma'
+# name = 'converged-equally-weighted-emma-optimizer-hyperparam'
+name = 'converged-partial-train-loss-vs-mrr'
+# name = 'converged-weighted-emma'
+
+portion = 'test'
 
 # Add and choose the experiments you want
 exp_ugly_names = {
@@ -22,6 +34,7 @@ exp_ugly_names = {
 
     'EMMAbert-10': 'exp-0.90-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAt5base-10': 'exp-0.90-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbertW7-10': 'exp-0.90-train-weighted-0.7-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 
     'EMMAbert-25': 'exp-0.75-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
     # 'EMMAt5base-25': 'exp-0.75-train-t5-base-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
@@ -112,8 +125,63 @@ exp_ugly_names_batch_size = {
     'Geometric-64': 'exp-0.99-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
 }
 
+exp_ugly_names_weighted_emma_SGD = {
+    'EMMAbert-0:1': 'exp-0.90-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.1:0.9': 'exp-0.90-train-weighted-0.1-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.2:0.8': 'exp-0.90-train-weighted-0.2-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.3:0.7': 'exp-0.90-train-weighted-0.3-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.5:0.5': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbert-1:1': 'exp-0.90-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.7:0.3': 'exp-0.90-train-weighted-0.7-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-1:0': 'exp-0.90-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+}
+exp_ugly_names_weighted_emma = {
+    'EMMAbert-0:1': 'exp-0.90-train-weighted-0.0-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.1:0.9': 'exp-0.90-train-weighted-0.1-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.2:0.8': 'exp-0.90-train-weighted-0.2-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.3:0.7': 'exp-0.90-train-weighted-0.3-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.5:0.5': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    # 'EMMAbert-1:1': 'exp-0.90-train-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.7:0.3': 'exp-0.90-train-weighted-0.7-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-1:0': 'exp-0.90-train-weighted-1.0-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+}
+
+
+
+exp_ugly_names_equally_weighted_emma = {
+    'EMMAbert-0.1:0.1': 'exp-0.90-train-equally-weighted-0.1-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-0.5:0.5': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-1:1': 'exp-0.90-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-10:10': 'exp-0.90-train-equally-weighted-10-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-100:100': 'exp-0.90-train-equally-weighted-100-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+}
+
+exp_ugly_names_equally_weighted_emma_optimizer_hyperparam = {
+    'EMMAbert-Adam_no_scheduler>0.01': 'exp-0.90-train-weighted-0.5-no-scheduler-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-Adam>0.001': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-Adam-0.001-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-Adam>0.01': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-Adam-0.01-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-Adam>0.1': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-Adam-0.1-unique_objects-gold-no_neg_sampling-1024',
+    'EMMAbert-SGD>0.05': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+}
+
+# exp_ugly_names_weighted_emma = {
+#     'EMMAbert-0.0': 'exp-0.90-train-supcon-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     # 'EMMAbert-0.1': 'exp-0.90-train-weighted-0.1-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'EMMAbert-0.3': 'exp-0.90-train-weighted-0.3-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'EMMAbert-0.5': 'exp-0.90-train-weighted-0.5-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'EMMAbert-0.7': 'exp-0.90-train-weighted-0.7-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'EMMAbert-1': 'exp-0.90-train-full-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+#     'EMMAbert_Equal_Weights-1': 'exp-0.90-train-supcon-emma-lard-64-relu-SGD-0.001-unique_objects-gold-no_neg_sampling-1024',
+# }
+
 if name == 'converged-batch-size':
-    exp_ugly_names = exp_ugly_names_batch_size 
+    exp_ugly_names = exp_ugly_names_batch_size
+elif name  == 'converged-weighted-emma' or name == 'converged-weighted-emma-scatter' or name == 'converged-weighted-emma-threshold' or name == 'converged-weighted-emma-threshold-scatter':
+    exp_ugly_names = exp_ugly_names_weighted_emma
+elif name == 'converged-equally-weighted-emma':
+    exp_ugly_names = exp_ugly_names_equally_weighted_emma
+elif name == 'converged-equally-weighted-emma-optimizer-hyperparam':
+    exp_ugly_names = exp_ugly_names_equally_weighted_emma_optimizer_hyperparam
 
 # if you don't want to report results for different language models:
 temp_exp_ugly_names = {}
@@ -148,6 +216,7 @@ experiments = {name:{} for name in exp_ugly_names.keys()}
 for method in experiments.keys():
     for seed in [7, 24, 42, 123, 3407]:
         experiments[method]['seed-'+str(seed)] = glob(os.path.join('results', f'{exp_ugly_names[method]}/seed-{str(seed)}/'), recursive=True)[0]
+        # experiments[method]['seed-'+str(seed)] = glob(os.path.join('/nfs/ada/ferraro/p/work/kasra/MMA/Code/results', f'{exp_ugly_names[method]}/seed-{str(seed)}/'), recursive=True)[0]
         # experiments[method]['seed-'+str(seed)] = glob(os.path.join('results', f'*{exp_ugly_names[method]}*/seed-{str(seed)}/'), recursive=True)[0]
 
 print(experiments)
@@ -181,17 +250,28 @@ def get_color_style(method):
         style = '-.H'
     if 'bertD7' in method:
         style = '--*'
+    if 'W7' in method:
+        style = '-.o'
+    if 'Equal' in method:
+        style = '-.o'
     
     return color, style
 
 results = {}
 logs = {}
+outputs = {}
 for method in experiments.keys():
     results[method] = {}
     logs[method] = {}
+    outputs[method] = {}
     for seed in experiments[method].keys():
         res = json.load(open(experiments[method][seed]+'results.json'))
         loss = json.load(open(experiments[method][seed]+'logs.json'))
+        if name == 'converged-weighted-emma-threshold' or name == 'converged-weighted-emma-threshold-scatter':
+            f = open(experiments[method][seed]+'outputs-test.pkl', 'rb')
+            output = pickle.load(f)
+            outputs[method][seed] = output[portion]['thresh_percent']
+            f.close()
         del res['best']
         if 'test-only' in res.keys():
             del res['test-only']
@@ -236,6 +316,8 @@ for method in experiments.keys():
     for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']:
         print(f'method: {method}, best {metr} ** avg:', results[method]['avg']['best']['test'][metr], f'std:', results[method]['std']['best']['test'][metr])
 
+print(f"----**** Done with loading results, logs, and ouptuts! ****----")
+print(f" outputs:{outputs} ")
 # Save results as csv and then convert it easily to latex table with best performances bolded.
 path = 'result-analysis/'
 metrics = ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard', 'acc_ad', 'acc_ar', 'acc_ld', 'acc_lr', 'acc_lad', 'acc_lar', 'acc_ard', 'acc_lrd', 'acc_lard']
@@ -285,14 +367,17 @@ result_mrr.to_csv(path_or_buf=path+'resultsMRR.csv', index=False)
 result_acc.to_csv(path_or_buf=path+'resultsACC.csv', index=False)
 
 
-markers = ['P', '^', 's', '+', 'o','v','<','>','8', 'p','*','h','H','D','d','X']
+markers = ['*', '<', 'o', 'P', '^', 's', '+', 'v', '>','8', 'p', 'h','H','D','d','X']
 styles = ['-',':','--','-.','|']
 styles_markers = ['-.^', ':+', '-o', '--s', '-.o', '-+', '--+', '-.+', ':o', '-v', '--v', '-.v']
 colors = ['tab:orange', 'tab:green', 'tab:blue', 'tab:red']
+colors = list(mcd.XKCD_COLORS.values())[-30:]
+colors.reverse()
+# colors = list(mcd.TABLEAU_COLORS.keys())
 # colors = {'f1': 'magenta', 'precision': 'red', 'recall':'blue'}
 
 
-portion = 'test'
+
 metric_correct_names = {
     'mrr_lrd': 'MRR speech ablated (trd)',
     'mrr_ard': 'MRR text ablated (srd)',
@@ -430,32 +515,271 @@ elif name == 'converged-partial-train-loss-vs-mrr':
     for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
         fig = plt.figure(figsize=(25,20))
         ax = fig.add_subplot(1,1,1)
+        df = pd.DataFrame(columns=['Method', 'Data', 'Loss', 'MRR'])        
+        
         for method_idx, method in enumerate(results_converged.keys()):
             percentages = list(results_converged[method].keys())
+        #     methods = list(np.repeat(list(results_converged.keys()), len(percentages)))
             # plt.plot([str(percent) for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], styles_markers[method_idx], label=method, markersize=15)
-            color_model, _ = get_color_style(method)
-            # plt.scatter([logs_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], markers, color=color_model, label=method, markersize=15)
-            for percent_idx, percent in enumerate(percentages):
-                plt.scatter(logs_converged[method][percent]['avg']['best'][portion][metr], results_converged[method][percent]['avg']['best'][portion][metr], marker=markers[percent_idx], color=color_model, label=method, s=70)
+            # color_model, _ = get_color_style(method)
+            # #plt.scatter([logs_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], markers, color=color_model, label=method, markersize=15)
             
+            for percent_idx, percent in enumerate(percentages):
+            #     # plt.scatter(logs_converged[method][percent]['avg']['best'][portion][metr], results_converged[method][percent]['avg']['best'][portion][metr], marker=markers[percent_idx], color=color_model, label=method, s=70)
+            #     plt.scatter(logs_converged[method][percent]['avg']['best'][portion][metr], results_converged[method][percent]['avg']['best'][portion][metr], marker=markers[method_idx], color=colors[percent_idx], label=method, s=70)
+
+                temp = {'Method': [method], 'Data': [int(float(percent)*73.80)], 'Loss': [logs_converged[method][percent]['avg']['best'][portion][metr]], 'MRR': [results_converged[method][percent]['avg']['best'][portion][metr]]}
+                df = pd.concat([df, pd.DataFrame(temp)], ignore_index=True)
+        
+        # sns.scatterplot(x=[logs_converged[method][percent]['avg']['best'][portion][metr] for percent in percentages], y=[results_converged[method][percent]['avg']['best'][portion][metr]for percent in percentages], hue=[str(int(float(percent)*73.80)) for percent in percentages], style=methods, palette='crest', s=70)
+        sns.scatterplot(data=df, x='Loss', y='MRR', hue='Data', style='Method', palette='crest', s=90)
+        # plt.setp(ax.get_legend().get_texts(), fontsize='30') # for legend text
+        # plt.setp(ax.get_legend().get_title(), fontsize='30') # for legend title
         plt.grid(True)
         plt.xlabel('Converged Loss', fontsize=40)
         plt.ylabel(metric_correct_names[metr], fontsize=40)
-        plt.xscale("symlog", base=2)
+        # plt.xscale("symlog", base=2)
         plt.xticks(fontsize=30)
         plt.yticks(fontsize=30)
-        # plt.legend(loc='upper right', fontsize=30, ncol=1)
+        # plt.legend(loc='upper right', fontsize=25, ncol=2)
+
+
+        ax = plt.gca()
+        ax.legend_.remove()
+        # Create a new legend for style only
+        handles, labels = ax.get_legend_handles_labels()
+        plt.legend(handles[labels.index('Method') : len(labels)], labels[labels.index('Method') : len(labels)], fontsize=25)
+        
+        sm = plt.cm.ScalarMappable(cmap='crest', norm=plt.Normalize(vmin=min(df['Data']), vmax=max(df['Data'])))
+        sm.set_array([])  # Set an empty array to define the range
+        ## Add the color bar legend
+        cbar = plt.colorbar(sm)
+        ## Set the label for the color bar
+        cbar.set_label("Number of Training Data", fontsize=25)
+        ## Set the ticks and labels for the color bar
+        # cbar.set_ticks([min(weights['weights']), max(weights['weights'])])
+        # cbar.set_ticklabels([str(min(weights['weights'])), str(max(weights['weights']))])
+        cbar.set_ticks(list(np.unique(df['Data']))[1::2])
+        cbar.set_ticklabels([str(w) for w in list(np.unique(df['Data']))[1::2]])
+        cbar.ax.tick_params(labelsize=25)
         # plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
 
-        marker_percents = list(list(results_converged.values())[0].keys())
-        handles_percents = [plt.plot([], [], markers[i], markerfacecolor='w', markeredgecolor='k')[0] for i in range(len(marker_percents))]
-        color_methods = list(results_converged.keys())
-        colors = []
-        for m in color_methods:
-            color, _ = get_color_style(m)
-            colors.append(color)
-        handles_methods = [plt.plot([], [], colors[i])[0] for i in range(len(colors))]
-        plt.legend(handles_percents+handles_methods, marker_percents+color_methods, loc='upper right', framealpha=1, fontsize=30, ncol=2)
+        # {   colors methods, markers percents
+        # marker_percents = list(list(results_converged.values())[0].keys())
+        # handles_percents = [plt.plot([], [], markers[i], markerfacecolor='w', markeredgecolor='k')[0] for i in range(len(marker_percents))]
+        # color_methods = list(results_converged.keys())
+        # colors = []
+        # for m in color_methods:
+        #     color, _ = get_color_style(m)
+        #     colors.append(color)
+        # handles_methods = [plt.plot([], [], colors[i])[0] for i in range(len(colors))]
+        # plt.legend(handles_percents+handles_methods, marker_percents+color_methods, loc='upper right', framealpha=1, fontsize=30, ncol=2)
+        # }
+
+        
+        # marker_methods = list(results_converged.keys())
+        # handles_methods = [plt.plot([], [], markers[i], markerfacecolor='w', markeredgecolor='k')[0] for i in range(len(marker_methods))]
+        # color_percents = [str(int(float(percent)*73.80)) for percent in list(list(results_converged.values())[0].keys())]
+        # # color_percents = list(list(results_converged.values())[0].keys())
+        # handles_percents = [plt.plot([], [], colors[i])[0] for i in range(len(color_percents))]
+        # plt.legend(handles_percents+handles_methods, color_percents+marker_methods, loc='upper right', framealpha=1, fontsize=30, ncol=2)
+
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+elif name == 'converged-weighted-emma' or name == 'converged-equally-weighted-emma':
+    results_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = results[method]
+
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        fig = plt.figure(figsize=(25,20))
+        ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results_converged.keys()):
+            weight = list(results_converged[method].keys())
+            # plt.plot([str(percent) for percent in weight], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in weight], styles_markers[method_idx], label=method, markersize=15)
+            color_model, style_embd = get_color_style(method)
+            plt.plot([str(percent) for percent in weight], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in weight], style_embd, color=color_model, label=method, markersize=15)
+            low = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in weight]) - np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in weight])
+            high = np.asarray([results_converged[method][percent]['avg']['best'][portion][metr] for percent in weight]) + np.asarray([results_converged[method][percent]['std']['best'][portion][metr] for percent in weight])
+            plt.fill_between([str(percent) for percent in weight], low, high, color=color_model, alpha=0.2)
+
+        plt.grid(True)
+        plt.xlabel('Impact Ratio of Geometric:SupCon', fontsize=40)
+        # plt.xlabel('Weight of Geometric Method in EMMA', fontsize=40)
+        plt.ylabel(metric_correct_names[metr], fontsize=40)
+        plt.xticks(fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.legend(loc='lower right', fontsize=30, ncol=1)
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+
+
+elif name == 'converged-weighted-emma-scatter':
+    results_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = results[method]
+
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        # fig = plt.figure(figsize=(15,20))
+        fig = plt.figure()
+        # ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results_converged.keys()):
+            weight = list(results_converged[method].keys())
+            # plt.plot([str(percent) for percent in weight], [results_converged[method][percent]['avg']['best'][portion][metr] for percent in weight], styles_markers[method_idx], label=method, markersize=15)
+            # color_model, style_embd = get_color_style(method)
+            sns.scatterplot(x=[float(percent.split(':')[0]) for percent in weight], y=[float(percent.split(':')[1]) for percent in weight], hue=[round(results_converged[method][percent]['avg']['best'][portion][metr],2) for percent in weight], size=[round(results_converged[method][percent]['avg']['best'][portion][metr],2) for percent in weight], palette="deep")
+
+        plt.grid(True)
+        # plt.xlabel('Weight of Geometric Method in EMMA', fontsize=40)
+        plt.xlabel('Weight of Geometric Method in EMMA')
+        # plt.ylabel('Weight of SupCon Method in EMMA', fontsize=40)
+        plt.ylabel('Weight of SupCon Method in EMMA')
+        # plt.title(metric_correct_names[metr], fontsize=40)
+        plt.title(metric_correct_names[metr])
+        # plt.xticks(fontsize=30)
+        # plt.xticks([float(percent.split(':')[0]) for percent in weight], fontsize=30)
+        plt.xticks([float(percent.split(':')[0]) for percent in weight])
+        # plt.yticks(fontsize=30)
+        # plt.yticks([float(percent.split(':')[1]) for percent in weight], fontsize=30)
+        plt.yticks([float(percent.split(':')[1]) for percent in weight])
+        # plt.legend(loc='lower left', fontsize=30, ncol=1)
+        plt.legend(loc='lower left')
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+elif name == 'converged-weighted-emma-threshold':
+    results_converged = {}
+    for method in outputs.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = outputs[method]
+
+    print(f" results_converged:{results_converged} ")
+    fig = plt.figure(figsize=(25,20))
+    ax = fig.add_subplot(1,1,1)
+    for method_idx, method in enumerate(results_converged.keys()):
+        print(f" method:{method} ")
+        weight = list(results_converged[method].keys())
+        color_model, style_embd = get_color_style(method)
+        plt.plot([str(percent) for percent in weight], [np.mean([results_converged[method][percent][seed] for seed in results_converged[method][percent].keys()]) for percent in weight], style_embd, color=color_model, label=method, markersize=15)
+        low = np.asarray([np.mean([results_converged[method][percent][seed] for seed in results_converged[method][percent].keys()]) for percent in weight]) - np.asarray([np.std([results_converged[method][percent][seed] for seed in results_converged[method][percent].keys()]) for percent in weight])
+        high = np.asarray([np.mean([results_converged[method][percent][seed] for seed in results_converged[method][percent].keys()]) for percent in weight]) + np.asarray([np.std([results_converged[method][percent][seed] for seed in results_converged[method][percent].keys()]) for percent in weight])
+        plt.fill_between([str(percent) for percent in weight], low, high, color=color_model, alpha=0.2)
+
+    plt.grid(True)
+    plt.xlabel('Impact Ratio of Geometric:SupCon', fontsize=40)
+    # plt.xlabel('Weight of Geometric Method in EMMA', fontsize=40)
+    plt.ylabel('Percentage Thresholded', fontsize=40)
+    plt.xticks(fontsize=30)
+    plt.yticks(fontsize=30)
+    plt.legend(loc='lower right', fontsize=30, ncol=1)
+    plt.savefig('result-analysis/average-seeds-'+name+'.pdf')
+
+
+
+if name == 'converged-weighted-emma-threshold-scatter':
+    results_converged = {}
+    outputs_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+            outputs_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1]] = results[method]
+            outputs_converged[method.split('-')[0]][method.split('-')[1]] = outputs[method]
+
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        # fig = plt.figure(figsize=(15,20))
+        fig = plt.figure()
+        # ax = fig.add_subplot(1,1,1)
+        
+        for method_idx, method in enumerate(results_converged.keys()):
+            weight = list(results_converged[method].keys())
+            
+            weights = {'weights': [float(percent.split(':')[0]) for percent in weight]}
+            
+            sns.scatterplot(x=[np.mean([outputs_converged[method][geom_weight][seed] for seed in outputs_converged[method][geom_weight].keys()]) for geom_weight in weight], y=[results_converged[method][geom_weight]['avg']['best'][portion][metr] for geom_weight in weight], hue=weights['weights'], palette='crest')
+            # sns.scatterplot(x=[np.mean([outputs_converged[method][geom_weight][seed] for seed in outputs_converged[method][geom_weight].keys()]) for geom_weight in weight], y=[results_converged[method][geom_weight]['avg']['best'][portion][metr] for geom_weight in weight], hue=weights['weights'], style=weights['weights'], palette="deep")
+            # for weight_idx, geom_weight in enumerate(weight):
+                # plt.scatter(np.mean([outputs_converged[method][geom_weight][seed] for seed in outputs_converged[method][geom_weight].keys()]), results_converged[method][geom_weight]['avg']['best'][portion][metr], marker='o', color=colors[weight_idx], label=weights['weights'][weight_idx], s=70)
+        plt.grid(True)
+        plt.xlabel('Percentage of Dissimilar Items With a Certain Distance Between Them')
+        plt.ylabel(metric_correct_names[metr])
+        # plt.ylabel(metric_correct_names[metr], fontsize=40)
+        # plt.title('Percentage vs. MRR')
+        
+        # plt.xticks([float(percent.split(':')[0]) for percent in weight])
+        plt.xticks(np.arange(0, 85, 10))
+        plt.yticks(np.arange(0.50, 0.95, 0.05))
+        # plt.legend(loc='lower left', fontsize=30, ncol=1)
+        # plt.legend(loc='lower right', title='Weight of Geom')
+        
+
+        # color bar legend
+        ## Get the current axes of the plot
+        ax = plt.gca()
+        ## Remove the default legend
+        ax.legend_.remove()
+        ## Create a color bar legend
+        sm = plt.cm.ScalarMappable(cmap='crest', norm=plt.Normalize(vmin=min(weights['weights']), vmax=max(weights['weights'])))
+        sm.set_array([])  # Set an empty array to define the range
+        ## Add the color bar legend
+        cbar = plt.colorbar(sm)
+        ## Set the label for the color bar
+        cbar.set_label("Weight of Geom")
+        ## Set the ticks and labels for the color bar
+        # cbar.set_ticks([min(weights['weights']), max(weights['weights'])])
+        # cbar.set_ticklabels([str(min(weights['weights'])), str(max(weights['weights']))])
+        cbar.set_ticks(weights['weights'])
+        cbar.set_ticklabels([str(w) for w in weights['weights']])
+
+
+        plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
+
+
+elif name == 'converged-equally-weighted-emma-optimizer-hyperparam':
+    results_converged = {}
+    for method in results.keys():
+        if method.split('-')[0] not in results_converged.keys():
+            results_converged[method.split('-')[0]] = {}
+        
+        if method.split('-')[1].split('>')[0] not in results_converged[method.split('-')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1].split('>')[0]] = {}
+        
+        if method.split('-')[1].split('>')[1] not in results_converged[method.split('-')[0]][method.split('-')[1].split('>')[0]].keys():
+            results_converged[method.split('-')[0]][method.split('-')[1].split('>')[0]][method.split('-')[1].split('>')[1]] = results[method]
+    print(f" results_converged.keys: {results_converged.keys()} \n optimiziers: {results_converged['EMMA'].keys()} ")
+    for optim in list(results_converged['EMMA'].keys()):
+        print(f"optim: {optim}, lrs: {results_converged['EMMA'][optim].keys()}")
+        
+    for metr in ['mrr_ad', 'mrr_ar', 'mrr_ld', 'mrr_lr', 'mrr_lad', 'mrr_lar', 'mrr_ard', 'mrr_lrd', 'mrr_lard']:
+        fig = plt.figure(figsize=(25,20))
+        ax = fig.add_subplot(1,1,1)
+        for method_idx, method in enumerate(results_converged.keys()):
+            # if more than one method, use colors for methods and marker for optimizers
+            for optim_idx, optim in enumerate(results_converged[method].keys()):
+                plt.plot([float(lr) for lr in list(results_converged[method][optim].keys())], [results_converged[method][optim][lr]['avg']['best'][portion][metr] for lr in list(results_converged[method][optim].keys())], marker=markers[optim_idx], color=colors[optim_idx], label=optim, markersize=15)
+                low = np.asarray([results_converged[method][optim][lr]['avg']['best'][portion][metr] for lr in list(results_converged[method][optim].keys())]) - np.asarray([results_converged[method][optim][lr]['std']['best'][portion][metr] for lr in list(results_converged[method][optim].keys())])
+                high = np.asarray([results_converged[method][optim][lr]['avg']['best'][portion][metr] for lr in list(results_converged[method][optim].keys())]) + np.asarray([results_converged[method][optim][lr]['std']['best'][portion][metr] for lr in list(results_converged[method][optim].keys())])
+                plt.fill_between([float(lr) for lr in list(results_converged[method][optim].keys())], low, high, color=colors[optim_idx], alpha=0.2)
+
+        plt.grid(True)
+        plt.xlabel('Learning Rate', fontsize=40)
+        # plt.xlabel('Weight of Geometric Method in EMMA', fontsize=40)
+        plt.ylabel(metric_correct_names[metr], fontsize=40)
+        plt.xticks([0.001, 0.01, 0.05, 0.1], fontsize=30)
+        plt.yticks(fontsize=30)
+        plt.legend(loc='lower right', fontsize=30, ncol=1)
         plt.savefig('result-analysis/average-seeds-'+name+'-'+metr+'.pdf')
 
 # Frank's request
