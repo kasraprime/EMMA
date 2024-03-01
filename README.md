@@ -1,5 +1,7 @@
-# MMA
-MMA stands for Multimodal Manifold Alignment which is the idea to map the same concepts from different input data sources to the same shared latent space.
+# EMMA
+This work is published at TMLR. [[```Paper```](https://openreview.net/forum?id=cXa6Xdm0v7)] [[```Citation```](#cite)]
+
+EMMA stands for Extended Multimodal Alignment which is the idea to map the same concepts from different input data sources to the same shared latent space.
 
 This repository contains three parts.
 1. Code: where *the code* is located obviously, along with the results.
@@ -58,3 +60,19 @@ You can run 4 different methods by specifying their names in the arguments.
 3. supcon: State-of-the-art baseline
 4. contrastive-org: Another SOTA baseline, but since it's not as strong as SupCon, we only report the results compared to SupCon.
 
+
+# Cite
+Please use the following bibtex entry to cite this work.
+
+```
+@article{
+darvish2023multimodal,
+title={Multimodal Language Learning for Object Retrieval in Low Data Regimes in the Face of Missing Modalities},
+author={Kasra Darvish and Edward Raff and Francis Ferraro and Cynthia Matuszek},
+journal={Transactions on Machine Learning Research},
+issn={2835-8856},
+year={2023},
+url={https://openreview.net/forum?id=cXa6Xdm0v7},
+note={}
+}
+```
